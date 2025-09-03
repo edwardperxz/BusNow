@@ -69,6 +69,9 @@ Antes de comenzar, asegúrate de tener instalado:
    
    # Editar .env con tus configuraciones
    nano .env  # o usar tu editor preferido
+   
+   # Aplicar configuración automáticamente
+   npm run configure
    ```
 
 4. **Iniciar el proyecto:**
@@ -472,8 +475,19 @@ eas build:configure
 eas build --platform android --profile production
 eas build --platform ios --profile production
 
-# Publicar actualizaciones OTA
-eas update --branch production --message "Nueva actualización"
+# Build de prueba (APK directo)
+npm run build:preview
+
+# Actualizaciones OTA
+npm run update:preview  # Para testing
+npm run update:prod     # Para producción
+
+# Enviar a tiendas
+npm run submit:android
+npm run submit:ios
+
+# Script interactivo de deployment
+npm run deploy
 ```
 
 ---

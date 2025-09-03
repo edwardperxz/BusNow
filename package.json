@@ -7,9 +7,19 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:android": "eas build --platform android",
-    "build:ios": "eas build --platform ios",
-    "preview": "expo start --tunnel"
+    "build:android": "eas build --platform android --profile production",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:preview": "eas build --platform all --profile preview",
+    "build:dev": "eas build --platform all --profile development",
+    "preview": "expo start --tunnel",
+    "deploy": "./deploy.sh",
+    "update:preview": "eas update --branch preview",
+    "update:prod": "eas update --branch production",
+    "submit:android": "eas submit --platform android",
+    "submit:ios": "eas submit --platform ios",
+    "build:status": "eas build:list",
+    "configure": "node configure-app.js",
+    "preeas": "npm run configure"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -24,6 +34,7 @@
     "expo-location": "^18.1.6",
     "expo-notifications": "^0.31.4",
     "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.17",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
@@ -37,6 +48,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
     "babel-preset-expo": "~13.0.0",
     "typescript": "~5.8.3"
   },
