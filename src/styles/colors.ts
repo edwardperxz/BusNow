@@ -66,14 +66,68 @@ export const BusNowColors = {
   },
 } as const;
 
+// Alias para compatibilidad con el sistema de tipos
+export const colors = {
+  primary: {
+    main: BusNowColors.primary,
+    light: BusNowColors.highlight,
+    dark: BusNowColors.secondaryStrong,
+    contrast: BusNowColors.white,
+  },
+  secondary: {
+    main: BusNowColors.highlight,
+    light: BusNowColors.secondaryWeak,
+    dark: BusNowColors.primary,
+    contrast: BusNowColors.white,
+  },
+  success: BusNowColors.busStatus.active,
+  warning: BusNowColors.highlight,
+  error: BusNowColors.secondaryWeak,
+  info: BusNowColors.secondaryStrong,
+  gray: {
+    50: '#FAFAFA',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121',
+  },
+  background: BusNowColors.background,
+  text: BusNowColors.text,
+  bus: BusNowColors.busStatus,
+  route: {
+    urban: BusNowColors.primary,
+    intercity: BusNowColors.highlight,
+    inactive: BusNowColors.text.muted,
+  },
+  map: {
+    busStop: BusNowColors.highlight,
+    userLocation: BusNowColors.busStatus.active,
+    selectedPoint: BusNowColors.secondaryWeak,
+    routePath: BusNowColors.primary,
+  },
+  status: BusNowColors.busStatus,
+  transparent: 'transparent',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  cardShadow: BusNowColors.shadow.light,
+};
+
 // 🎯 Funciones utilitarias para colores dinámicos
 export const getBusStatusColor = (status: 'active' | 'inactive' | 'maintenance' | 'delayed'): string => {
   return BusNowColors.busStatus[status];
 };
 
-export const getRouteColor = (lineNumber: number): string => {
+export const getRouteColor = (routeId: string): string => {
   const routeKeys = Object.keys(BusNowColors.routes) as Array<keyof typeof BusNowColors.routes>;
-  const routeIndex = (lineNumber - 1) % routeKeys.length;
+  const hash = routeId.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  const routeIndex = Math.abs(hash) % routeKeys.length;
   const routeKey = routeKeys[routeIndex];
   return BusNowColors.routes[routeKey];
 };
@@ -81,6 +135,9 @@ export const getRouteColor = (lineNumber: number): string => {
 export const getCapacityColor = (level: 'low' | 'medium' | 'high' | 'full'): string => {
   return BusNowColors.capacity[level];
 };
+
+// Colores para diferentes rutas (rotación automática)
+export const routeColors = Object.values(BusNowColors.routes);
 
 // 📱 Estilos predefinidos para uso directo
 export const BusNowStyles = {

@@ -2,6 +2,10 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Settings } from '../types';
 
 const initialState: Settings = {
+  theme: 'light',
+  language: 'es',
+  units: 'metric',
+  refreshInterval: 5000,
   notifications: {
     enabled: true,
     arrivalAlerts: true,
@@ -11,11 +15,15 @@ const initialState: Settings = {
   map: {
     followUserLocation: true,
     showTraffic: false,
+    showStops: true,
+    animateMovement: true,
+    refreshRate: 5000,
     mapType: 'standard',
   },
   tracking: {
-    updateInterval: 10, // segundos
-    accuracyThreshold: 50, // metros
+    accuracy: 'high',
+    updateInterval: 5000,
+    backgroundTracking: false,
   },
 };
 

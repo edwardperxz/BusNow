@@ -7,10 +7,11 @@ import MapView, {
   PROVIDER_GOOGLE,
   MarkerAnimated 
 } from 'react-native-maps';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store';
-import { updateBusLocation, setUserLocation } from '../store/trackingSlice';
+import { useDispatch } from 'react-redux';
+import { RootState, useAppSelector } from '../store';
+import { updateBusLocation } from '../store/trackingSlice';
 import { locationService } from '../services/locationService';
+import { useUserLocation } from '../presentation/hooks/useAuth';
 import { Bus, BusRoute, Coordinates } from '../types';
 import BusMarker from './BusMarker';
 import RouteSelector from './RouteSelector';
@@ -29,10 +30,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const dispatch = useDispatch();
   const mapRef = useRef<MapView>(null);
   
-  const { buses, routes, userLocation, selectedRoute } = useSelector(
-    (state: RootState) => state.tracking
+  // Hook para obtener ubicación del usuario
+  const { location: userLocation } = useUserLocation();
+  
+  const { buses, routes, selectedRoute } = useAppSelector(
+    (state: RootState) => {
+      const trackingState = (state.tracking as any) || {};
+      return {
+        buses: trackingState.buses || [],
+        routes: trackingState.routes || [],
+        selectedRoute: trackingState.selectedRoute || null
+      };
+    }
   );
-  const { map: mapSettings } = useSelector((state: RootState) => state.settings);
+  
+  const mapSettings = useAppSelector((state: RootState) => {
+    const settings = (state.settings as any);
+    return settings?.map || {
+      followUserLocation: true,
+      showTraffic: false,
+      mapType: 'standard'
+    };
+  });
 
   const [region, setRegion] = useState<Region>({
     latitude: 18.4861, // Coordenadas por defecto (puedes cambiar por tu ciudad)
@@ -57,11 +76,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
     try {
       const location = await locationService.getCurrentLocation();
       if (location) {
-        dispatch(setUserLocation(location));
+        const userLocation = {
+          ...location,
+          coordinates: location,
+          timestamp: new Date()
+        };
+        // El hook useUserLocation ya maneja la ubicación
         
         if (mapSettings.followUserLocation) {
           setRegion({
-            ...location.coordinates,
+            ...location,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           });
@@ -77,11 +101,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const focusOnRoute = (routeId: string) => {
-    const route = routes.find(r => r.id === routeId);
+    const route = routes.find((r: BusRoute) => r.id === routeId);
     if (route && route.coordinates.length > 0) {
       // Calcular el centro y zoom para la ruta
-      const latitudes = route.coordinates.map(coord => coord.latitude);
-      const longitudes = route.coordinates.map(coord => coord.longitude);
+      const latitudes = route.coordinates.map((coord: Coordinates) => coord.latitude);
+      const longitudes = route.coordinates.map((coord: Coordinates) => coord.longitude);
       
       const minLat = Math.min(...latitudes);
       const maxLat = Math.max(...latitudes);
@@ -112,11 +136,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const getFilteredBuses = (): Bus[] => {
     if (!selectedRouteId) return buses;
-    return buses.filter(bus => bus.routeId === selectedRouteId);
+    return buses.filter((bus: Bus) => bus.routeId === selectedRouteId);
   };
 
   const getSelectedRoute = (): BusRoute | undefined => {
-    return selectedRouteId ? routes.find(r => r.id === selectedRouteId) : undefined;
+    return selectedRouteId ? routes.find((r: BusRoute) => r.id === selectedRouteId) : undefined;
   };
 
   const handleMarkerPress = (bus: Bus) => {
@@ -132,16 +156,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const getRouteName = (routeId: string): string => {
-    const route = routes.find(r => r.id === routeId);
+    const route = routes.find((r: BusRoute) => r.id === routeId);
     return route ? route.name : 'Desconocida';
   };
 
   const getStatusText = (status: Bus['status']): string => {
     switch (status) {
-      case 'active': return 'Activo';
-      case 'inactive': return 'Inactivo';
+      case 'online': return 'Activo';
+      case 'offline': return 'Inactivo';
       case 'maintenance': return 'Mantenimiento';
-      case 'break': return 'Descanso';
+      case 'delayed': return 'Retrasado';
       default: return 'Desconocido';
     }
   };
@@ -151,7 +175,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       <BusMarker
         key={bus.id}
         bus={bus}
-        route={routes.find(r => r.id === bus.routeId)}
+        route={routes.find((r: BusRoute) => r.id === bus.routeId)}
         onPress={() => handleMarkerPress(bus)}
       />
     ));
@@ -216,7 +240,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         {/* Marcador de ubicación del usuario (personalizado) */}
         {userLocation && (
           <Marker
-            coordinate={userLocation.coordinates}
+            coordinate={userLocation}
             title="Tu ubicación"
             anchor={{ x: 0.5, y: 0.5 }}
           >

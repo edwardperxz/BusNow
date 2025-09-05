@@ -12,13 +12,13 @@ interface BusMarkerProps {
 const BusMarker: React.FC<BusMarkerProps> = ({ bus, route, onPress }) => {
   const getMarkerColor = () => {
     switch (bus.status) {
-      case 'active':
+      case 'online':
         return route?.color || '#2196F3';
-      case 'inactive':
+      case 'offline':
         return '#9E9E9E';
       case 'maintenance':
         return '#FF9800';
-      case 'break':
+      case 'delayed':
         return '#FFC107';
       default:
         return '#9E9E9E';
