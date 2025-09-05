@@ -81,7 +81,7 @@ const DriverLoginScreen: React.FC<DriverLoginScreenProps> = ({ navigation }) => 
                   [
                     {
                       text: 'OK',
-                      onPress: () => navigation.navigate('Home')
+                      onPress: () => navigation.navigate('MainTabs')
                     }
                   ]
                 );
