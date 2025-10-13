@@ -35,15 +35,17 @@
     "expo-notifications": "^0.31.4",
     "expo-status-bar": "~2.2.3",
     "expo-updates": "~0.28.17",
+    "nativewind": "^4.2.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
     "react-native-animatable": "^1.4.0",
     "react-native-maps": "1.20.1",
-    "react-native-safe-area-context": "5.4.0",
+    "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-web": "^0.20.0",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
