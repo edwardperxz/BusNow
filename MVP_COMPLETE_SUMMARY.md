@@ -83,7 +83,7 @@ src/
 
 ## 🚀 Tecnologías Utilizadas
 
-- **Framework**: React Native + Expo SDK 53
+- **Framework**: React Native + Expo SDK 54
 - **Lenguaje**: TypeScript 5.x
 - **Estado Global**: Redux Toolkit 2.x
 - **Navegación**: React Navigation 6.x

@@ -1,88 +1,221 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BusNowColors, CommonStyles, getRouteColor } from '../styles/colors';
+
+interface Route {
+  id: string;
+  name: string;
+  origin: string;
+  destination: string;
+  frequency: string;
+  fare: string;
+  status: 'active' | 'limited' | 'maintenance';
+  activeBuses: number;
+}
 
 export default function RoutesScreen() {
-  const routes = [
+  const routes: Route[] = [
     {
-      id: 1,
+      id: '1',
       name: 'Ruta Centro',
-      description: 'Centro - Universidad',
-      color: '#FF6B6B',
-      buses: 3,
-      status: 'active'
+      origin: 'Plaza Mayor',
+      destination: 'Universidad',
+      frequency: '5-8 min',
+      fare: 'Q2.50',
+      status: 'active',
+      activeBuses: 2
     },
     {
-      id: 2,
+      id: '2',
       name: 'Ruta Norte',
-      description: 'Centro - Zona Norte',
-      color: '#4ECDC4',
-      buses: 2,
-      status: 'active'
+      origin: 'Terminal Norte',
+      destination: 'Centro Comercial',
+      frequency: '10-15 min',
+      fare: 'Q3.00',
+      status: 'active',
+      activeBuses: 2
     },
     {
-      id: 3,
+      id: '3',
       name: 'Ruta Sur',
-      description: 'Centro - Zona Sur',
-      color: '#45B7D1',
-      buses: 4,
-      status: 'active'
+      origin: 'Aeropuerto',
+      destination: 'Zona Industrial',
+      frequency: '15-20 min',
+      fare: 'Q4.00',
+      status: 'limited',
+      activeBuses: 1
     },
   ];
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return BusNowColors.primary;
+      case 'limited': return BusNowColors.accent;
+      case 'maintenance': return BusNowColors.secondaryLight;
+      default: return BusNowColors.gray400;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Activa';
+      case 'limited': return 'Servicio limitado';
+      case 'maintenance': return 'Mantenimiento';
+      default: return 'Desconocido';
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1 px-5 py-3">
-        {/* Header */}
-        <View className="items-center mb-6">
-          <Text className="text-2xl font-bold text-blue-600 mb-2">📋 Rutas Disponibles</Text>
-          <Text className="text-sm text-gray-600">Selecciona una ruta para ver detalles</Text>
-        </View>
-
-        {/* Routes List */}
-        {routes.map((route) => (
-          <TouchableOpacity key={route.id} className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            <View className="flex-row items-center mb-3">
-              <View 
-                className="w-1 h-10 rounded mr-3" 
-                style={{ backgroundColor: route.color }} 
-              />
-              <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-800 mb-1">{route.name}</Text>
-                <Text className="text-sm text-gray-600">{route.description}</Text>
-              </View>
-              <View className="items-end">
-                <Text className="text-base font-medium text-blue-600 mb-1">{route.buses} buses</Text>
-                <Text className="text-xs text-green-600">🟢 Activa</Text>
-              </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BusNowColors.gray100 }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: CommonStyles.spacing.md }}>
+        
+        {/* Header con estadísticas */}
+        <View style={{
+          backgroundColor: BusNowColors.white,
+          padding: CommonStyles.spacing.md,
+          borderRadius: 8,
+          marginTop: 100,
+          marginBottom: CommonStyles.spacing.lg,
+          ...CommonStyles.cardShadow
+        }}>
+          <Text style={{
+            ...CommonStyles.typography.h3,
+            color: BusNowColors.gray800,
+            marginBottom: CommonStyles.spacing.sm
+          }}>Resumen de rutas</Text>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{
+                ...CommonStyles.typography.h2,
+                color: BusNowColors.primary
+              }}>{routes.length}</Text>
+              <Text style={{
+                ...CommonStyles.typography.small,
+                color: BusNowColors.gray500
+              }}>Rutas totales</Text>
             </View>
-            
-            <View className="flex-row justify-around">
-              <TouchableOpacity className="bg-gray-50 py-2 px-4 rounded-md">
-                <Text className="text-sm text-gray-700">🗺️ Ver en Mapa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="bg-gray-50 py-2 px-4 rounded-md">
-                <Text className="text-sm text-gray-700">⏰ Horarios</Text>
-              </TouchableOpacity>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{
+                ...CommonStyles.typography.h2,
+                color: BusNowColors.secondary
+              }}>{routes.reduce((acc, route) => acc + route.activeBuses, 0)}</Text>
+              <Text style={{
+                ...CommonStyles.typography.small,
+                color: BusNowColors.gray500
+              }}>Buses activos</Text>
             </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* Stats */}
-        <View className="mt-5">
-          <Text className="text-lg font-semibold text-gray-800 mb-4 text-center">
-            Estadísticas del Sistema
-          </Text>
-          <View className="flex-row justify-around">
-            <View className="bg-white p-5 rounded-xl items-center min-w-[120px] shadow-sm">
-              <Text className="text-3xl font-bold text-blue-600 mb-1">9</Text>
-              <Text className="text-sm text-gray-600 text-center">Buses Activos</Text>
-            </View>
-            <View className="bg-white p-5 rounded-xl items-center min-w-[120px] shadow-sm">
-              <Text className="text-3xl font-bold text-blue-600 mb-1">3</Text>
-              <Text className="text-sm text-gray-600 text-center">Rutas Operativas</Text>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{
+                ...CommonStyles.typography.h2,
+                color: BusNowColors.accent
+              }}>{routes.filter(r => r.status === 'active').length}</Text>
+              <Text style={{
+                ...CommonStyles.typography.small,
+                color: BusNowColors.gray500
+              }}>Operativas</Text>
             </View>
           </View>
+        </View>
+
+        {/* Lista de rutas */}
+        <View style={{ paddingBottom: CommonStyles.spacing.xl }}>
+          <Text style={{
+            ...CommonStyles.typography.h3,
+            marginBottom: CommonStyles.spacing.md,
+            color: BusNowColors.gray700
+          }}>Rutas disponibles</Text>
+
+          {routes.map((route, index) => (
+            <TouchableOpacity
+              key={route.id}
+              style={{
+                backgroundColor: BusNowColors.white,
+                padding: CommonStyles.spacing.md,
+                borderRadius: 8,
+                marginBottom: CommonStyles.spacing.sm,
+                borderLeftWidth: 4,
+                borderLeftColor: getRouteColor(index + 1),
+                ...CommonStyles.cardShadow
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: CommonStyles.spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    ...CommonStyles.typography.body,
+                    fontWeight: '600',
+                    color: BusNowColors.gray800,
+                    marginBottom: CommonStyles.spacing.xs
+                  }}>
+                    🚌 {route.name}
+                  </Text>
+                  <Text style={{
+                    ...CommonStyles.typography.caption,
+                    color: BusNowColors.gray600
+                  }}>
+                    {route.origin} → {route.destination}
+                  </Text>
+                </View>
+                
+                <View style={{
+                  backgroundColor: getStatusColor(route.status) + '20',
+                  paddingHorizontal: CommonStyles.spacing.sm,
+                  paddingVertical: CommonStyles.spacing.xs,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: getStatusColor(route.status)
+                }}>
+                  <Text style={{
+                    ...CommonStyles.typography.small,
+                    color: getStatusColor(route.status),
+                    fontWeight: '500'
+                  }}>
+                    {getStatusText(route.status)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', gap: CommonStyles.spacing.md }}>
+                  <View>
+                    <Text style={{
+                      ...CommonStyles.typography.small,
+                      color: BusNowColors.gray500
+                    }}>Frecuencia</Text>
+                    <Text style={{
+                      ...CommonStyles.typography.caption,
+                      fontWeight: '500',
+                      color: BusNowColors.gray700
+                    }}>{route.frequency}</Text>
+                  </View>
+                  <View>
+                    <Text style={{
+                      ...CommonStyles.typography.small,
+                      color: BusNowColors.gray500
+                    }}>Tarifa</Text>
+                    <Text style={{
+                      ...CommonStyles.typography.caption,
+                      fontWeight: '500',
+                      color: BusNowColors.gray700
+                    }}>{route.fare}</Text>
+                  </View>
+                </View>
+
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{
+                    ...CommonStyles.typography.small,
+                    color: BusNowColors.gray500
+                  }}>Buses activos</Text>
+                  <Text style={{
+                    ...CommonStyles.typography.body,
+                    fontWeight: '600',
+                    color: getRouteColor(index + 1)
+                  }}>{route.activeBuses}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
