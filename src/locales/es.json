@@ -1,0 +1,31 @@
+{
+  "navigation": {
+    "map": "Mapa en Tiempo Real",
+    "routes": "Rutas de Buses",
+    "home": "Información", 
+    "driver": "Panel Conductor",
+    "settings": "Configuración"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones",
+    "lightMode": "Modo Claro",
+    "darkMode": "Modo Oscuro",
+    "english": "Inglés",
+    "spanish": "Español"
+  },
+  "map": {
+    "activeBuses": "buses activos",
+    "searchPlaceholder": "¿A dónde vas?",
+    "myLocation": "Mi ubicación",
+    "noResults": "No se encontraron resultados"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar", 
+    "back": "Atrás",
+    "close": "Cerrar"
+  }
+}

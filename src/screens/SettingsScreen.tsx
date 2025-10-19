@@ -1,338 +1,313 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BusNowColors, CommonStyles } from '../styles/colors';
+import { BusNowColors, getTheme, CommonStyles } from '../styles/colors';
+import { useSettings } from '../context/SettingsContext';
 
-interface SettingsItemProps {
-  icon: string;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  rightElement?: React.ReactNode;
-  color?: string;
-}
-
-const SettingsItem: React.FC<SettingsItemProps> = ({ 
-  icon, 
-  title, 
-  subtitle, 
-  onPress, 
-  rightElement,
-  color = BusNowColors.primary
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={{
-      ...CommonStyles.card,
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: CommonStyles.spacing.sm,
-      ...CommonStyles.softShadow,
-    }}
-  >
-    {/* Ícono mejorado */}
-    <View style={{
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: color,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 16,
-      ...CommonStyles.softShadow,
-    }}>
-      <Text style={{ fontSize: 20, color: BusNowColors.white }}>
-        {icon}
-      </Text>
-    </View>
-
-    {/* Contenido mejorado */}
-    <View style={{ flex: 1 }}>
-      <Text style={{
-        ...CommonStyles.typography.bodyMedium,
-        color: BusNowColors.gray800,
-        marginBottom: subtitle ? 4 : 0,
-      }}>
-        {title}
-      </Text>
-      {subtitle && (
-        <Text style={{
-          ...CommonStyles.typography.caption,
-          color: BusNowColors.gray500,
-        }}>
-          {subtitle}
-        </Text>
-      )}
-    </View>
-
-    {/* Elemento derecho */}
-    {rightElement || (
-      <Text style={{
-        fontSize: 16,
-        color: BusNowColors.gray400,
-        fontWeight: '500',
-      }}>
-        ›
-      </Text>
-    )}
-  </TouchableOpacity>
-);
-
-const SettingsScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
-  const [notifications, setNotifications] = useState(true);
-  const [locationTracking, setLocationTracking] = useState(true);
-  const [voiceGuidance, setVoiceGuidance] = useState(false);
-  const [batterySaver, setBatterySaver] = useState(false);
+export default function SettingsScreen({ navigation }: any) {
+  const { language, theme, setLanguage, setTheme, t } = useSettings();
+  const colors = getTheme(theme === 'dark');
+  const isDark = theme === 'dark';
 
   const handleBackPress = () => {
-    if (navigation?.navigate) {
-      navigation.navigate('home');
-    }
+    navigation.navigate('map');
   };
 
-  const showComingSoon = (feature: string) => {
-    Alert.alert('Próximamente', `La función "${feature}" estará disponible en una próxima actualización.`);
+  const toggleLanguage = () => {
+    setLanguage(language === 'es' ? 'en' : 'es');
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CommonStyles.background.primary }}>
-      {/* Header mejorado y más amigable */}
+    <SafeAreaView style={{ 
+      flex: 1, 
+      backgroundColor: colors.gray100 
+    }}>
+      {/* Header */}
       <View style={{
-        backgroundColor: BusNowColors.primary,
-        paddingTop: 20,
-        paddingBottom: 30,
-        paddingHorizontal: 24,
+        backgroundColor: colors.primary,
+        paddingHorizontal: CommonStyles.spacing.md,
+        paddingVertical: CommonStyles.spacing.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
       }}>
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+        <TouchableOpacity
+          onPress={handleBackPress}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{
+            fontSize: 18,
+            color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
+            fontWeight: '600'
+          }}>←</Text>
+        </TouchableOpacity>
+
+        <Text style={{
+          fontSize: 20,
+          fontWeight: '700',
+          color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
+          flex: 1,
+          textAlign: 'center',
+          marginRight: 40,
         }}>
-          <TouchableOpacity
-            onPress={handleBackPress}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 20, color: BusNowColors.white, fontWeight: '600' }}>←</Text>
-          </TouchableOpacity>
-          
-          <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={{
-              ...CommonStyles.typography.h2,
-              color: BusNowColors.white,
-              marginBottom: 4,
-            }}>
-              Configuración
-            </Text>
-            <Text style={{
-              ...CommonStyles.typography.caption,
-              color: 'rgba(255, 255, 255, 0.8)',
-            }}>
-              Personaliza tu experiencia
-            </Text>
-          </View>
-          
-          <View style={{ width: 44 }} />
-        </View>
+          {t('settings.title')}
+        </Text>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: CommonStyles.spacing.md }}>
-        {/* Sección General */}
-        <View style={{ marginTop: CommonStyles.spacing.xl }}>
-          <Text style={{
-            ...CommonStyles.typography.h3,
-            color: BusNowColors.gray700,
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ 
+          paddingHorizontal: CommonStyles.spacing.md,
+          paddingTop: CommonStyles.spacing.lg 
+        }}>
+          
+          {/* Sección de Idioma */}
+          <View style={{
+            backgroundColor: colors.white,
+            borderRadius: CommonStyles.borderRadius.large,
+            padding: CommonStyles.spacing.lg,
             marginBottom: CommonStyles.spacing.md,
-            paddingLeft: CommonStyles.spacing.xs,
+            ...CommonStyles.cardShadow,
           }}>
-            General
-          </Text>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.gray800,
+              marginBottom: CommonStyles.spacing.md,
+            }}>
+              {t('settings.language')}
+            </Text>
 
-          <SettingsItem
-            icon="🔔"
-            title="Notificaciones"
-            subtitle="Alertas de buses y rutas"
-            color="#FF6B6B"
-            rightElement={
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: BusNowColors.gray300, true: BusNowColors.primary }}
-                thumbColor={notifications ? BusNowColors.white : BusNowColors.gray400}
-              />
-            }
-          />
+            <TouchableOpacity
+              onPress={toggleLanguage}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: CommonStyles.spacing.md,
+                paddingHorizontal: CommonStyles.spacing.md,
+                backgroundColor: colors.gray100,
+                borderRadius: CommonStyles.borderRadius.medium,
+                borderWidth: 2,
+                borderColor: colors.primary,
+              }}
+            >
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: CommonStyles.spacing.md,
+              }}>
+                <Text style={{
+                  fontSize: 18,
+                  color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
+                }}>
+                  {language === 'es' ? '🇪🇸' : '🇺🇸'}
+                </Text>
+              </View>
 
-          <SettingsItem
-            icon="📍"
-            title="Ubicación"
-            subtitle="Permitir seguimiento de ubicación"
-            color="#4CAF50"
-            rightElement={
-              <Switch
-                value={locationTracking}
-                onValueChange={setLocationTracking}
-                trackColor={{ false: BusNowColors.gray300, true: BusNowColors.primary }}
-                thumbColor={locationTracking ? BusNowColors.white : BusNowColors.gray400}
-              />
-            }
-          />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: colors.gray800,
+                }}>
+                  {language === 'es' ? t('settings.spanish') : t('settings.english')}
+                </Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: colors.gray500,
+                  marginTop: 2,
+                }}>
+                  {language === 'es' ? 'Cambiar a inglés' : 'Switch to Spanish'}
+                </Text>
+              </View>
 
-          <SettingsItem
-            icon="🔊"
-            title="Voz y sonido"
-            subtitle="Instrucciones de voz y sonidos"
-            color="#2196F3"
-            rightElement={
-              <Switch
-                value={voiceGuidance}
-                onValueChange={setVoiceGuidance}
-                trackColor={{ false: BusNowColors.gray300, true: BusNowColors.primary }}
-                thumbColor={voiceGuidance ? BusNowColors.white : BusNowColors.gray400}
-              />
-            }
-          />
+              <Text style={{
+                fontSize: 16,
+                color: colors.primary,
+                fontWeight: '600',
+              }}>›</Text>
+            </TouchableOpacity>
+          </View>
 
-          <SettingsItem
-            icon="🔋"
-            title="Ahorro de batería"
-            subtitle="Reducir el consumo de batería"
-            color="#FF9800"
-            rightElement={
-              <Switch
-                value={batterySaver}
-                onValueChange={setBatterySaver}
-                trackColor={{ false: BusNowColors.gray300, true: BusNowColors.primary }}
-                thumbColor={batterySaver ? BusNowColors.white : BusNowColors.gray400}
-              />
-            }
-          />
-        </View>
-
-        {/* Sección Preferencias */}
-        <View style={{ marginTop: CommonStyles.spacing.xxl }}>
-          <Text style={{
-            ...CommonStyles.typography.h3,
-            color: BusNowColors.gray700,
+          {/* Sección de Tema */}
+          <View style={{
+            backgroundColor: colors.white,
+            borderRadius: CommonStyles.borderRadius.large,
+            padding: CommonStyles.spacing.lg,
             marginBottom: CommonStyles.spacing.md,
-            paddingLeft: CommonStyles.spacing.xs,
+            ...CommonStyles.cardShadow,
           }}>
-            Preferencias de Conducción
-          </Text>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.gray800,
+              marginBottom: CommonStyles.spacing.md,
+            }}>
+              {t('settings.theme')}
+            </Text>
 
-          <SettingsItem
-            icon="🗺️"
-            title="Visualización del mapa"
-            subtitle="Configurar apariencia del mapa"
-            color="#9C27B0"
-            onPress={() => showComingSoon('Visualización del mapa')}
-          />
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: CommonStyles.spacing.md,
+              paddingHorizontal: CommonStyles.spacing.md,
+              backgroundColor: colors.gray100,
+              borderRadius: CommonStyles.borderRadius.medium,
+              borderWidth: 2,
+              borderColor: colors.secondary,
+            }}>
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.secondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: CommonStyles.spacing.md,
+              }}>
+                <Text style={{
+                  fontSize: 18,
+                  color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
+                }}>
+                  {isDark ? '🌙' : '☀️'}
+                </Text>
+              </View>
 
-          <SettingsItem
-            icon="🚗"
-            title="Navegación"
-            subtitle="Preferencias de ruta"
-            color="#3F51B5"
-            onPress={() => showComingSoon('Navegación')}
-          />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: colors.gray800,
+                }}>
+                  {isDark ? t('settings.darkMode') : t('settings.lightMode')}
+                </Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: colors.gray500,
+                  marginTop: 2,
+                }}>
+                  {isDark ? 'Interfaz oscura activa' : 'Interfaz clara activa'}
+                </Text>
+              </View>
 
-          <SettingsItem
-            icon="🚌"
-            title="Detalles del vehículo"
-            subtitle="Configurar información del bus"
-            color="#00BCD4"
-            onPress={() => showComingSoon('Detalles del vehículo')}
-          />
-        </View>
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{
+                  false: colors.gray300,
+                  true: colors.secondary
+                }}
+                thumbColor={isDark ? colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white : colors.gray100}
+              />
+            </View>
+          </View>
 
-        {/* Sección Avanzado */}
-        <View style={{ marginTop: CommonStyles.spacing.xxl }}>
-          <Text style={{
-            ...CommonStyles.typography.h3,
-            color: BusNowColors.gray700,
-            marginBottom: CommonStyles.spacing.md,
-            paddingLeft: CommonStyles.spacing.xs,
+          {/* Sección de Notificaciones */}
+          <View style={{
+            backgroundColor: colors.white,
+            borderRadius: CommonStyles.borderRadius.large,
+            padding: CommonStyles.spacing.lg,
+            marginBottom: CommonStyles.spacing.lg,
+            ...CommonStyles.cardShadow,
           }}>
-            Opciones Avanzadas
-          </Text>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.gray800,
+              marginBottom: CommonStyles.spacing.md,
+            }}>
+              {t('settings.notifications')}
+            </Text>
 
-          <SettingsItem
-            icon="💳"
-            title="Pases de peaje"
-            subtitle="Gestionar métodos de pago"
-            color="#795548"
-            onPress={() => showComingSoon('Pases de peaje')}
-          />
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: CommonStyles.spacing.md,
+              paddingHorizontal: CommonStyles.spacing.md,
+              backgroundColor: colors.gray100,
+              borderRadius: CommonStyles.borderRadius.medium,
+              borderWidth: 2,
+              borderColor: colors.accent,
+            }}>
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: CommonStyles.spacing.md,
+              }}>
+                <Text style={{
+                  fontSize: 18,
+                  color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
+                }}>🔔</Text>
+              </View>
 
-          <SettingsItem
-            icon="🚨"
-            title="Alertas y reportes"
-            subtitle="Configurar alertas de tráfico"
-            color="#FF5722"
-            onPress={() => showComingSoon('Alertas y reportes')}
-          />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: colors.gray800,
+                }}>
+                  Llegada de buses
+                </Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: colors.gray500,
+                  marginTop: 2,
+                }}>
+                  Recibe alertas cuando tu bus esté cerca
+                </Text>
+              </View>
 
-          <SettingsItem
-            icon="⚡"
-            title="Velocímetro"
-            subtitle="Mostrar velocidad actual"
-            color="#FFC107"
-            onPress={() => showComingSoon('Velocímetro')}
-          />
+              <Switch
+                value={true}
+                onValueChange={() => {}}
+                trackColor={{
+                  false: colors.gray300,
+                  true: colors.accent
+                }}
+                thumbColor={colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white}
+              />
+            </View>
+          </View>
 
-          <SettingsItem
-            icon="🎵"
-            title="Reproductor de audio"
-            subtitle="Integración con música"
-            color="#E91E63"
-            onPress={() => showComingSoon('Reproductor de audio')}
-          />
-        </View>
-
-        {/* Sección Ayuda */}
-        <View style={{ marginTop: CommonStyles.spacing.xxl, marginBottom: CommonStyles.spacing.xxl }}>
-          <Text style={{
-            ...CommonStyles.typography.h3,
-            color: BusNowColors.gray700,
-            marginBottom: CommonStyles.spacing.md,
-            paddingLeft: CommonStyles.spacing.xs,
+          {/* Información de la app */}
+          <View style={{
+            backgroundColor: colors.white,
+            borderRadius: CommonStyles.borderRadius.large,
+            padding: CommonStyles.spacing.lg,
+            marginBottom: CommonStyles.spacing.xxl,
+            ...CommonStyles.cardShadow,
           }}>
-            Ayuda y Soporte
-          </Text>
-
-          <SettingsItem
-            icon="❓"
-            title="Ayuda"
-            subtitle="Centro de ayuda y FAQ"
-            color="#607D8B"
-            onPress={() => showComingSoon('Ayuda')}
-          />
-
-          <SettingsItem
-            icon="📧"
-            title="Contactar soporte"
-            subtitle="Enviar comentarios o reportar problemas"
-            color="#8BC34A"
-            onPress={() => showComingSoon('Contactar soporte')}
-          />
-
-          <SettingsItem
-            icon="ℹ️"
-            title="Acerca de"
-            subtitle="Versión 1.0.0"
-            color={BusNowColors.primary}
-            onPress={() => showComingSoon('Acerca de')}
-          />
+            <Text style={{
+              fontSize: 14,
+              color: colors.gray500,
+              textAlign: 'center',
+              lineHeight: 20,
+            }}>
+              BusNow v1.0.0{'\n'}
+              Transporte inteligente para todos{'\n'}
+              © 2025 BusNow Team
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-};
-
-export default SettingsScreen;
+}

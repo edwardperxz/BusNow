@@ -1,0 +1,32 @@
+{
+  "navigation": {
+    "home": "Home",
+    "map": "Map",
+    "settings": "Settings",
+    "profile": "Profile"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "spanish": "Spanish",
+    "english": "English",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
+  },
+  "map": {
+    "searchPlaceholder": "Where do you want to go?",
+    "currentLocation": "Current Location",
+    "buses": "Buses",
+    "routes": "Routes"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back"
+  }
+}

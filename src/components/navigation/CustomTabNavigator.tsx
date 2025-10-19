@@ -8,11 +8,14 @@ import DriverScreen from '../../screens/DriverScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HamburgerMenu from './HamburgerMenu';
 import HamburgerButton from './HamburgerButton';
-import { BusNowColors } from '../../styles/colors';
+import { BusNowColors, getTheme } from '../../styles/colors';
+import { useSettings } from '../../context/SettingsContext';
 
 const CustomTabNavigator: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState('map');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme } = useSettings();
+  const colors = getTheme(theme === 'dark');
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -42,7 +45,7 @@ const CustomTabNavigator: React.FC = () => {
   return (
     <View style={{ 
       flex: 1, 
-      backgroundColor: BusNowColors.white 
+      backgroundColor: colors.gray100 
     }}>
       {/* Contenido de la pantalla */}
       <View style={{ flex: 1 }}>

@@ -1,16 +1,20 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BusNowColors, CommonStyles } from '../styles/colors';
+import { BusNowColors, CommonStyles, getTheme } from '../styles/colors';
+import { useSettings } from '../context/SettingsContext';
 
 export default function HomeScreen({ navigation }: any) {
+  const { theme, t } = useSettings();
+  const colors = getTheme(theme === 'dark');
+
   const quickActions = [
     {
       id: 'map',
       title: 'Ver Mapa en Tiempo Real',
       subtitle: 'Encuentra buses cerca de ti',
       icon: '🗺️',
-      color: BusNowColors.primary,
+      color: colors.primary,
       onPress: () => navigation.navigate('map'),
     },
     {
@@ -18,7 +22,7 @@ export default function HomeScreen({ navigation }: any) {
       title: 'Explorar Rutas',
       subtitle: 'Descubre todas las líneas disponibles',
       icon: '🚌',
-      color: BusNowColors.secondary,
+      color: colors.secondary,
       onPress: () => navigation.navigate('routes'),
     },
     {
@@ -26,19 +30,19 @@ export default function HomeScreen({ navigation }: any) {
       title: 'Panel de Conductor',
       subtitle: 'Herramientas para conductores',
       icon: '👨‍💼',
-      color: BusNowColors.accent,
+      color: colors.accent,
       onPress: () => navigation.navigate('driver'),
     },
   ];
 
   const stats = [
-    { label: 'Buses Activos', value: '24', color: BusNowColors.primary },
-    { label: 'Rutas Disponibles', value: '8', color: BusNowColors.secondary },
-    { label: 'Tiempo Promedio', value: '12min', color: BusNowColors.accent },
+    { label: 'Buses Activos', value: '24', color: colors.primary },
+    { label: 'Rutas Disponibles', value: '8', color: colors.secondary },
+    { label: 'Tiempo Promedio', value: '12min', color: colors.accent },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CommonStyles.background.primary }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.gray100 }}>
       <ScrollView style={{ flex: 1, paddingHorizontal: CommonStyles.spacing.md, paddingTop: 100 }}>
         {/* Header amigable y minimalista */}
         <View style={{
@@ -47,7 +51,7 @@ export default function HomeScreen({ navigation }: any) {
           paddingTop: CommonStyles.spacing.lg,
         }}>
           <View style={{
-            backgroundColor: BusNowColors.primary,
+            backgroundColor: colors.primary,
             width: 80,
             height: 80,
             borderRadius: 40,
@@ -56,12 +60,12 @@ export default function HomeScreen({ navigation }: any) {
             marginBottom: CommonStyles.spacing.lg,
             ...CommonStyles.softShadow,
           }}>
-            <Text style={{ fontSize: 36, color: BusNowColors.white }}>🚌</Text>
+            <Text style={{ fontSize: 36, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>🚌</Text>
           </View>
           
           <Text style={{
             ...CommonStyles.typography.h1,
-            color: BusNowColors.primary,
+            color: colors.primary,
             marginBottom: CommonStyles.spacing.sm,
             textAlign: 'center',
           }}>
@@ -71,7 +75,7 @@ export default function HomeScreen({ navigation }: any) {
             ...CommonStyles.typography.body,
             textAlign: 'center',
             maxWidth: 300,
-            color: BusNowColors.gray600,
+            color: colors.gray600,
           }}>
             Bienvenido a BusNow, tu compañero de viaje inteligente
           </Text>
@@ -86,7 +90,7 @@ export default function HomeScreen({ navigation }: any) {
           {stats.map((stat, index) => (
             <View key={index} style={{
               flex: 1,
-              backgroundColor: BusNowColors.white,
+              backgroundColor: colors.white,
               borderRadius: CommonStyles.borderRadius.medium,
               padding: CommonStyles.spacing.md,
               marginHorizontal: CommonStyles.spacing.xs,
@@ -102,7 +106,7 @@ export default function HomeScreen({ navigation }: any) {
               </Text>
               <Text style={{
                 ...CommonStyles.typography.small,
-                color: BusNowColors.gray600,
+                color: colors.gray600,
                 textAlign: 'center',
                 lineHeight: 16,
               }}>
@@ -117,7 +121,7 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={{
             ...CommonStyles.typography.h3,
             marginBottom: CommonStyles.spacing.lg,
-            color: BusNowColors.gray700,
+            color: colors.gray700,
             paddingLeft: CommonStyles.spacing.xs,
           }}>
             ¿Qué quieres hacer hoy?
@@ -127,7 +131,9 @@ export default function HomeScreen({ navigation }: any) {
             <TouchableOpacity 
               key={action.id}
               style={{
-                ...CommonStyles.card,
+                backgroundColor: colors.white,
+                borderRadius: CommonStyles.borderRadius.large,
+                padding: CommonStyles.spacing.lg,
                 flexDirection: 'row',
                 alignItems: 'center',
                 marginBottom: CommonStyles.spacing.md,
@@ -144,7 +150,7 @@ export default function HomeScreen({ navigation }: any) {
                 justifyContent: 'center',
                 marginRight: CommonStyles.spacing.md
               }}>
-                <Text style={{ fontSize: 24, color: BusNowColors.white }}>
+                <Text style={{ fontSize: 24, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>
                   {action.icon}
                 </Text>
               </View>
@@ -152,14 +158,14 @@ export default function HomeScreen({ navigation }: any) {
               <View style={{ flex: 1 }}>
                 <Text style={{
                   ...CommonStyles.typography.bodyMedium,
-                  color: BusNowColors.gray800,
+                  color: colors.gray800,
                   marginBottom: 2,
                 }}>
                   {action.title}
                 </Text>
                 <Text style={{
                   ...CommonStyles.typography.caption,
-                  color: BusNowColors.gray500
+                  color: colors.gray500
                 }}>
                   {action.subtitle}
                 </Text>
@@ -167,7 +173,7 @@ export default function HomeScreen({ navigation }: any) {
               
               <Text style={{
                 fontSize: 16,
-                color: BusNowColors.gray400,
+                color: colors.gray400,
               }}>
                 ›
               </Text>
@@ -177,13 +183,15 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Información adicional */}
         <View style={{
-          ...CommonStyles.card,
+          backgroundColor: colors.white,
+          borderRadius: CommonStyles.borderRadius.large,
+          padding: CommonStyles.spacing.lg,
           alignItems: 'center',
           marginBottom: CommonStyles.spacing.xxl,
           ...CommonStyles.softShadow,
         }}>
           <View style={{
-            backgroundColor: BusNowColors.accent + '20',
+            backgroundColor: colors.accent + '20',
             width: 48,
             height: 48,
             borderRadius: 24,
@@ -191,12 +199,12 @@ export default function HomeScreen({ navigation }: any) {
             justifyContent: 'center',
             marginBottom: CommonStyles.spacing.md,
           }}>
-            <Text style={{ fontSize: 20, color: BusNowColors.accent }}>💡</Text>
+            <Text style={{ fontSize: 20, color: colors.accent }}>💡</Text>
           </View>
           
           <Text style={{
             ...CommonStyles.typography.bodyMedium,
-            color: BusNowColors.gray800,
+            color: colors.gray800,
             marginBottom: CommonStyles.spacing.sm,
             textAlign: 'center',
           }}>
@@ -204,7 +212,7 @@ export default function HomeScreen({ navigation }: any) {
           </Text>
           <Text style={{
             ...CommonStyles.typography.caption,
-            color: BusNowColors.gray600,
+            color: colors.gray600,
             textAlign: 'center',
             lineHeight: 20,
           }}>

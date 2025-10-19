@@ -1,0 +1,31 @@
+{
+  "navigation": {
+    "map": "Real-time Map",
+    "routes": "Bus Routes", 
+    "home": "Information",
+    "driver": "Driver Panel",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "english": "English",
+    "spanish": "Spanish"
+  },
+  "map": {
+    "activeBuses": "active buses",
+    "searchPlaceholder": "Where are you going?",
+    "myLocation": "My location",
+    "noResults": "No results found"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "close": "Close"
+  }
+}

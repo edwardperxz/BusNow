@@ -1,0 +1,32 @@
+{
+  "navigation": {
+    "home": "Inicio",
+    "map": "Mapa",
+    "settings": "Configuración",
+    "profile": "Perfil"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones",
+    "spanish": "Español",
+    "english": "Inglés",
+    "lightMode": "Modo Claro",
+    "darkMode": "Modo Oscuro"
+  },
+  "map": {
+    "searchPlaceholder": "¿A dónde quieres ir?",
+    "currentLocation": "Ubicación Actual",
+    "buses": "Buses",
+    "routes": "Rutas"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "back": "Atrás"
+  }
+}

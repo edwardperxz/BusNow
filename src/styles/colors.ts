@@ -1,5 +1,5 @@
-// 🎨 Paleta de Colores BusNow - Sistema centralizado
-export const BusNowColors = {
+// 🎨 Paleta de Colores BusNow - Sistema centralizado con soporte para tema oscuro
+export const LightTheme = {
   // Colores principales
   primary: '#003D2D',      // Verde oscuro - Color principal de la marca
   white: '#FFFFFF',        // Blanco puro - Fondos y textos sobre colores oscuros
@@ -38,6 +38,52 @@ export const BusNowColors = {
   route5: '#004D40',       // Verde más oscuro
   route6: '#1E3A8A',       // Azul más oscuro
 };
+
+export const DarkTheme = {
+  // Colores principales adaptados para modo oscuro
+  primary: '#00654A',      // Verde más brillante para mejor contraste
+  white: '#1F1F1F',        // Fondo oscuro principal
+  secondary: '#2E5BBA',    // Azul más brillante
+  secondaryLight: '#D47B76', // Rosa más suave para modo oscuro
+  accent: '#F4B942',       // Naranja más brillante
+  
+  // Grises invertidos para modo oscuro
+  gray100: '#2A2A2A',      // Fondo más oscuro
+  gray200: '#3A3A3A',      // Elementos de fondo
+  gray300: '#4A4A4A',      // Bordes y separadores
+  gray400: '#6A6A6A',      // Texto secundario
+  gray500: '#8A8A8A',      // Texto terciario
+  gray600: '#ABABAB',      // Texto principal
+  gray700: '#CBCBCB',      // Texto destacado
+  gray800: '#E1E1E1',      // Texto muy destacado
+  gray900: '#F1F1F1',      // Texto máximo contraste
+
+  // Estados de buses para modo oscuro
+  busActive: '#00654A',    // Verde brillante
+  busInactive: '#8B9197',  // Gris más claro
+  busMaintenance: '#F4B942', // Naranja brillante
+  busDelayed: '#D47B76',   // Rosa ajustado
+
+  // Niveles de capacidad para modo oscuro
+  capacityLow: '#00654A',     
+  capacityMedium: '#F4B942',  
+  capacityHigh: '#D47B76',    
+  capacityFull: '#2E5BBA',    
+
+  // Colores de rutas para modo oscuro
+  route1: '#00654A',       
+  route2: '#2E5BBA',       
+  route3: '#F4B942',       
+  route4: '#D47B76',       
+  route5: '#006B52',       
+  route6: '#3B82F6',       
+};
+
+// Función para obtener el tema actual
+export const getTheme = (isDark: boolean) => isDark ? DarkTheme : LightTheme;
+
+// Export por defecto (tema claro para compatibilidad)
+export const BusNowColors = LightTheme;
 
 // Funciones utilitarias para obtener colores dinámicos
 export const getBusStatusColor = (status: 'active' | 'inactive' | 'maintenance' | 'delayed'): string => {

@@ -1,6 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions, TouchableWithoutFeedback } from 'react-native';
-import { BusNowColors, CommonStyles } from '../../styles/colors';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Animated, 
+  Dimensions, 
+  TouchableWithoutFeedback,
+  StatusBar,
+  Platform 
+} from 'react-native';
+import { BusNowColors, CommonStyles, getTheme } from '../../styles/colors';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MenuItem {
   key: string;
@@ -22,8 +32,14 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
   onItemPress, 
   activeItem 
 }) => {
-  const screenWidth = Dimensions.get('window').width;
-  const slideAnim = useRef(new Animated.Value(-screenWidth)).current;
+  const { theme, t } = useSettings();
+  const colors = getTheme(theme === 'dark');
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Menú más compacto (85% del ancho en lugar de 100%)
+  const menuWidth = screenWidth * 0.85;
   
   const menuItems: MenuItem[] = [
     { key: 'map', label: 'Mapa en Tiempo Real', icon: '🗺️', color: '#2196F3' },
@@ -32,118 +48,179 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
     { key: 'driver', label: 'Panel Conductor', icon: '👨‍💼', color: '#9C27B0' },
   ];
 
+  const [shouldRender, setShouldRender] = useState(false);
+
   React.useEffect(() => {
     if (isOpen) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: false,
-        tension: 100,
-        friction: 8,
-      }).start();
-    } else {
-      Animated.spring(slideAnim, {
-        toValue: -screenWidth,
-        useNativeDriver: false,
-        tension: 120,
-        friction: 8,
-      }).start();
+      // Mostrar el componente antes de animar
+      setShouldRender(true);
+      
+      // Resetear valores antes de animar para asegurar animación consistente
+      slideAnim.setValue(-menuWidth);
+      overlayOpacity.setValue(0);
+      
+      // Animación más suave al abrir
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 280,
+          useNativeDriver: false,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 280,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    } else if (shouldRender) {
+      // Animación más suave al cerrar
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -menuWidth,
+          duration: 250,
+          useNativeDriver: false,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        // Ocultar el componente después de la animación
+        setShouldRender(false);
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, menuWidth, slideAnim, overlayOpacity, shouldRender]);
 
   const handleItemPress = (key: string) => {
     onItemPress(key);
     onToggle(); // Cerrar el menú después de seleccionar
   };
 
+  const handleClosePress = () => {
+    console.log('Close button pressed'); // Debug
+    onToggle();
+  };
+
+  // Renderizar cuando debe mostrarse (abierto o cerrándose)
+  if (!shouldRender && !isOpen) return null;
+
   return (
     <>
-      {/* Drawer Menu - Pantalla completa para móvil */}
+      {/* Overlay de fondo - toca para cerrar */}
+      <TouchableWithoutFeedback onPress={onToggle}>
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            opacity: overlayOpacity,
+            zIndex: 998,
+          }}
+        />
+      </TouchableWithoutFeedback>
+
+      {/* Drawer Menu - Con animaciones de apertura y cierre */}
       <Animated.View
         style={{
           position: 'absolute',
           top: 0,
           left: slideAnim,
-          width: '100%',
-          height: '100%',
-          backgroundColor: BusNowColors.white,
+          width: menuWidth,
+          height: screenHeight,
+          backgroundColor: colors.white,
           zIndex: 999,
+          shadowColor: colors.gray800,
+          shadowOffset: { width: 2, height: 0 },
+          shadowOpacity: 0.25,
+          shadowRadius: 15,
+          elevation: 15,
         }}
       >
-        {/* Header del menú - Más amigable y moderno */}
+        {/* Header del menú - Responsivo */}
         <View style={{
-          backgroundColor: BusNowColors.primary,
-          paddingTop: 60,
-          paddingBottom: 30,
-          paddingHorizontal: 24,
+          backgroundColor: colors.primary,
+          paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 20,
+          paddingBottom: 24,
+          paddingHorizontal: 20,
         }}>
-          {/* Fila superior con X y configuración */}
+          {/* Fila superior con X */}
           <View style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 24,
+            marginBottom: 20,
           }}>
             <TouchableOpacity
-              onPress={onToggle}
+              onPress={handleClosePress}
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
                 backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={{ 
-                fontSize: 18, 
-                color: BusNowColors.white,
+                fontSize: 16, 
+                color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
                 fontWeight: '600'
               }}>×</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
-              onPress={() => onItemPress('settings')}
+              onPress={() => {
+                onItemPress('settings');
+                onToggle();
+              }}
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
                 backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 20, color: BusNowColors.white }}>⚙️</Text>
+              <Text style={{ fontSize: 18, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>⚙️</Text>
             </TouchableOpacity>
           </View>
           
-          {/* Logo y saludo centrados */}
+          {/* Logo y saludo - Más compacto */}
           <View style={{ alignItems: 'center' }}>
             <View style={{
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              width: 72,
-              height: 72,
-              borderRadius: 36,
+              width: 60,
+              height: 60,
+              borderRadius: 30,
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 16,
+              marginBottom: 12,
             }}>
-              <Text style={{ fontSize: 32, color: BusNowColors.white }}>🚌</Text>
+              <Text style={{ fontSize: 28, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>🚌</Text>
             </View>
             
             <Text style={{
-              ...CommonStyles.typography.h2,
-              color: BusNowColors.white,
+              fontSize: 22,
+              fontWeight: '700',
+              color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
               marginBottom: 4,
             }}>BusNow</Text>
             <Text style={{
-              ...CommonStyles.typography.caption,
+              fontSize: 12,
               color: 'rgba(255, 255, 255, 0.8)',
             }}>Tu compañero de viaje</Text>
           </View>
         </View>
 
-        {/* Menu Items - Diseño más amigable y espacioso */}
-        <View style={{ flex: 1, paddingTop: 32, paddingHorizontal: 8 }}>
+        {/* Menu Items - Más compacto y responsivo */}
+        <View style={{ flex: 1, paddingTop: 24, paddingHorizontal: 6 }}>
           {menuItems.map((item, index) => {
             const isActive = item.key === activeItem;
             
@@ -154,57 +231,58 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingVertical: 18,
-                  paddingHorizontal: 20,
-                  marginVertical: 4,
-                  marginHorizontal: 8,
-                  borderRadius: CommonStyles.borderRadius.medium,
-                  backgroundColor: isActive ? `${item.color}15` : 'transparent',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  marginVertical: 2,
+                  marginHorizontal: 6,
+                  borderRadius: 12,
+                  backgroundColor: isActive ? `${item.color}12` : 'transparent',
                 }}
+                activeOpacity={0.7}
               >
-                {/* Icono mejorado */}
+                {/* Icono más compacto */}
                 <View style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: isActive ? item.color : BusNowColors.gray100,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: isActive ? item.color : colors.gray100,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginRight: 20,
-                  ...CommonStyles.softShadow,
+                  marginRight: 16,
                 }}>
                   <Text style={{
-                    fontSize: 20,
-                    color: isActive ? BusNowColors.white : BusNowColors.gray600,
+                    fontSize: 18,
+                    color: isActive ? (colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white) : colors.gray600,
                   }}>
                     {item.icon}
                   </Text>
                 </View>
 
-                {/* Texto mejorado */}
+                {/* Texto adaptable */}
                 <View style={{ flex: 1 }}>
                   <Text style={{
-                    ...CommonStyles.typography.bodyMedium,
-                    color: isActive ? item.color : BusNowColors.gray800,
-                    marginBottom: 2,
+                    fontSize: 15,
+                    fontWeight: '500',
+                    color: isActive ? item.color : colors.gray800,
+                    marginBottom: 1,
                   }}>
                     {item.label}
                   </Text>
                   <Text style={{
-                    ...CommonStyles.typography.small,
-                    color: BusNowColors.gray500,
+                    fontSize: 11,
+                    color: colors.gray500,
                   }}>
-                    {item.key === 'map' ? 'Seguimiento GPS en vivo' :
+                    {item.key === 'map' ? 'Seguimiento GPS' :
                      item.key === 'routes' ? 'Todas las líneas' : 
-                     item.key === 'home' ? 'Estadísticas e información' : 
-                     'Herramientas de conductor'}
+                     item.key === 'home' ? 'Información' : 
+                     'Herramientas'}
                   </Text>
                 </View>
 
                 {/* Indicador de flecha */}
                 <Text style={{
-                  fontSize: 16,
-                  color: isActive ? item.color : BusNowColors.gray400,
+                  fontSize: 14,
+                  color: isActive ? item.color : colors.gray400,
                   fontWeight: isActive ? '600' : '400',
                 }}>
                   ›
@@ -214,19 +292,19 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
           })}
         </View>
 
-        {/* Footer del menú */}
+        {/* Footer más compacto */}
         <View style={{
-          paddingHorizontal: 20,
-          paddingVertical: 20,
+          paddingHorizontal: 16,
+          paddingVertical: 16,
           borderTopWidth: 1,
-          borderTopColor: BusNowColors.gray200,
+          borderTopColor: colors.gray200,
         }}>
           <Text style={{
-            ...CommonStyles.typography.small,
-            color: BusNowColors.gray500,
+            fontSize: 10,
+            color: colors.gray500,
             textAlign: 'center',
           }}>
-            Versión 1.0.0
+            BusNow v1.0.0 • Transporte inteligente
           </Text>
         </View>
       </Animated.View>
