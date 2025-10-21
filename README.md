@@ -1,22 +1,22 @@
 # 🚌 BusNow - Sistema de Tracking de Buses en Tiempo Real
 
-> **Una aplicación móvil multiplataforma para el seguimiento de transporte público en tiempo real, desarrollada con React Native y Expo.**
+> **Una aplicación móvil multiplataforma para el seguimiento de transporte público en tiempo real en Chiriquí, Panamá, desarrollada con React Native y Expo.**
 
-## � **Descripción del Proyecto**
+## 🌍 **Descripción del Proyecto**
 
-BusNow es una solución integral para el monitoreo y seguimiento de buses de transporte público en tiempo real. La aplicación permite a los usuarios visualizar la ubicación exacta de los buses, conocer tiempos de llegada estimados, recibir notificaciones push y navegar rutas de manera interactiva.
+BusNow es una solución integral para el monitoreo y seguimiento de buses de transporte público en tiempo real específicamente diseñada para la provincia de Chiriquí, Panamá. La aplicación permite a los usuarios visualizar la ubicación exacta de los buses, conocer tiempos de llegada estimados, recibir notificaciones push y navegar rutas de manera interactiva en ciudades como David, Boquete, Bugaba y otras localidades de la región.
 
 ### 🎯 **Problema que Resuelve:**
-- **Incertidumbre en tiempos de espera** del transporte público
-- **Falta de información en tiempo real** sobre ubicación de buses
-- **Planificación ineficiente** de viajes en transporte público
-- **Comunicación deficiente** entre operadores y usuarios
+- **Incertidumbre en tiempos de espera** del transporte público en Chiriquí
+- **Falta de información en tiempo real** sobre ubicación de buses en rutas locales
+- **Planificación ineficiente** de viajes entre David, Boquete, Bugaba y otras ciudades
+- **Comunicación deficiente** entre operadores de transporte y usuarios en la región
 
 ### 💡 **Solución Propuesta:**
-- **Tracking GPS en tiempo real** de toda la flota de buses
-- **Estimaciones precisas** de tiempos de llegada usando algoritmos predictivos
-- **Notificaciones inteligentes** para alertas y actualizaciones de servicio
-- **Interfaz intuitiva** con mapas interactivos y navegación sencilla
+- **Tracking GPS en tiempo real** de la flota de buses de Chiriquí
+- **Estimaciones precisas** de tiempos de llegada usando algoritmos predictivos adaptados al tráfico local
+- **Notificaciones inteligentes** para alertas y actualizaciones de servicio regional
+- **Interfaz intuitiva** con mapas interactivos específicos de la provincia de Chiriquí
 
 ---
 
@@ -439,24 +439,24 @@ Usuario ← → UI (React Native) ← → Redux Store ← → Services ← → A
 
 ### **🚍 Rutas Simuladas:**
 ```
-Línea 1 - Centro: Plaza Mayor → Universidad → Hospital → Centro Comercial
-Línea 2 - Norte: Terminal Norte → Estadio → Centro → Universidad
-Línea 3 - Sur: Aeropuerto → Centro → Zona Industrial
+Línea 1 - Centro David: Parque Cervantes → Universidad → Hospital Chiriquí → Terminal
+Línea 2 - David-Boquete: Terminal David → Dolega → Boquete Centro → Volcán
+Línea 3 - David-Bugaba: Centro David → Pedregal → Bugaba → La Concepción
 ```
 
 ### **🚌 Buses Activos:**
-- **6 buses simulados** con movimiento automático
+- **6 buses simulados** con movimiento automático en rutas de Chiriquí
 - **Estados variables**: 4 activos, 1 en mantenimiento, 1 retrasado
 - **Capacidades dinámicas**: 20-95% ocupación simulada
-- **Rutas asignadas** con horarios realistas
+- **Rutas asignadas** con horarios realistas para la región
 
 ### **📍 Paradas Configuradas:**
 ```
-- Plaza Mayor (Centro): Lat: -12.0464, Lng: -77.0428
-- Universidad (Norte): Lat: -12.0464, Lng: -77.0428  
-- Terminal Norte: Lat: -12.0264, Lng: -77.0528
-- Centro Comercial: Lat: -12.0664, Lng: -77.0328
-- Hospital Central: Lat: -12.0564, Lng: -77.0228
+- Centro de David: Lat: 8.4333, Lng: -82.4333
+- Parque Cervantes: Lat: 8.4280, Lng: -82.4280  
+- Terminal de Buses: Lat: 8.4400, Lng: -82.4400
+- Hospital Chiriquí: Lat: 8.4250, Lng: -82.4350
+- Universidad Tecnológica: Lat: 8.4100, Lng: -82.4100
 ```
 
 ---

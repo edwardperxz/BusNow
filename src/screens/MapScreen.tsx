@@ -1,21 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  TextInput, 
-  Dimensions, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Dimensions,
   ScrollView,
   Alert,
   Platform,
-  StyleSheet
+  StyleSheet,
+  StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Region, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 
-import { BusNowColors, CommonStyles, getBusStatusColor, getRouteColor, getTheme } from '../styles/colors';
+import { getTheme, CommonStyles, getBusStatusColor, getRouteColor } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
+import { useSearch } from '../context/SearchContext';
+import GooglePlacesSearchInteractive from '../components/GooglePlacesSearchInteractive';
 
 interface Bus {
   id: string;
@@ -40,12 +44,12 @@ interface BusStop {
 
 const { width, height } = Dimensions.get('window');
 
-// Coordenadas de Lima, Perú por defecto
-const LIMA_COORDS = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
+// Coordenadas de David, Chiriquí, Panamá por defecto
+const DAVID_COORDS = {
+  latitude: 8.4333,
+  longitude: -82.4333,
+  latitudeDelta: 0.0922,
+  longitudeDelta: 0.0421,
 };
 
 // Estilo oscuro para Google Maps
@@ -238,18 +242,43 @@ const darkMapStyle = [
 
 export default function MapScreen() {
   const { theme } = useSettings();
+  const { searchState, setSearchState } = useSearch();
   const colors = getTheme(theme === 'dark');
   const isDark = theme === 'dark';
   const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState<Region>(LIMA_COORDS);
+  const [region, setRegion] = useState<Region>(DAVID_COORDS);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [busStops, setBusStops] = useState<BusStop[]>([]);
   const [searchText, setSearchText] = useState('');
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  
+  // Google Maps API Key from environment
+  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
-  // Datos simulados para Lima con coordenadas reales
+  // Función para manejar la selección de lugares
+  const handlePlaceSelect = (place: any) => {
+    setSelectedPlace(place);
+    
+    // Animación hacia la ubicación seleccionada
+    if (mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: place.latitude,
+        longitude: place.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 1000);
+    }
+  };
+
+  // Función para manejar cambios de estado del buscador
+  const handleSearchStateChange = (state: 'hidden' | 'neutral' | 'expanded') => {
+    setSearchState(state);
+  };
+
+  // Datos simulados para David, Chiriquí con coordenadas reales
   const simulatedBuses: Bus[] = [
     {
       id: 'BN-001',
@@ -301,41 +330,41 @@ export default function MapScreen() {
     }
   ];
 
-  // Datos simulados de paradas de bus (Lima, Perú)
+  // Datos simulados de paradas de bus (David, Chiriquí, Panamá)
   const simulatedBusStops: BusStop[] = [
     { 
       id: 'stop_001', 
-      name: 'Centro de Lima', 
-      latitude: -12.0464, 
-      longitude: -77.0428, 
+      name: 'Centro de David', 
+      latitude: 8.4333, 
+      longitude: -82.4333, 
       routes: ['Verde', 'Azul'] 
     },
     { 
       id: 'stop_002', 
-      name: 'Plaza Mayor', 
-      latitude: -12.0472, 
-      longitude: -77.0300, 
+      name: 'Parque Cervantes', 
+      latitude: 8.4280, 
+      longitude: -82.4280, 
       routes: ['Azul', 'Naranja'] 
     },
     { 
       id: 'stop_003', 
-      name: 'Miraflores', 
-      latitude: -12.1203, 
-      longitude: -77.0286, 
+      name: 'Terminal de Buses', 
+      latitude: 8.4400, 
+      longitude: -82.4400, 
       routes: ['Verde', 'Morada'] 
     },
     { 
       id: 'stop_004', 
-      name: 'San Isidro', 
-      latitude: -12.0969, 
-      longitude: -77.0362, 
+      name: 'Hospital Chiriquí', 
+      latitude: 8.4250, 
+      longitude: -82.4350, 
       routes: ['Naranja'] 
     },
     { 
       id: 'stop_005', 
-      name: 'Callao', 
-      latitude: -12.0566, 
-      longitude: -77.1181, 
+      name: 'Universidad Tecnológica', 
+      latitude: 8.4100, 
+      longitude: -82.4100, 
       routes: ['Azul', 'Morada'] 
     }
   ];
@@ -388,7 +417,7 @@ export default function MapScreen() {
       setRegion(newRegion);
     } catch (error) {
       console.error('Error al obtener ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación. Mostrando Lima por defecto.');
+      Alert.alert('Error', 'No se pudo obtener tu ubicación. Mostrando David por defecto.');
     } finally {
       setIsLoading(false);
     }
@@ -495,6 +524,32 @@ export default function MapScreen() {
           
           {/* Marcadores de paradas */}
           {busStops.map(renderBusStopMarker)}
+          
+          {/* Marcador del lugar seleccionado */}
+          {selectedPlace && (
+            <Marker
+              coordinate={{
+                latitude: selectedPlace.latitude,
+                longitude: selectedPlace.longitude,
+              }}
+              title={selectedPlace.structured_formatting.main_text}
+              description={selectedPlace.structured_formatting.secondary_text}
+            >
+              <View style={[styles.selectedPlaceMarker, { backgroundColor: colors.accent }]}>
+                <Text style={styles.selectedPlaceMarkerText}>📍</Text>
+              </View>
+              <Callout>
+                <View style={styles.calloutContainer}>
+                  <Text style={[styles.calloutTitle, { color: colors.gray800 }]}>
+                    {selectedPlace.structured_formatting.main_text}
+                  </Text>
+                  <Text style={[styles.calloutDescription, { color: colors.gray600 }]}>
+                    {selectedPlace.structured_formatting.secondary_text}
+                  </Text>
+                </View>
+              </Callout>
+            </Marker>
+          )}
         </MapView>
 
         {/* Controles del mapa - Centro derecha */}
@@ -506,12 +561,15 @@ export default function MapScreen() {
             </Text>
           </View>
           
-          {/* Botón de ubicación */}
-          {location && (
-            <TouchableOpacity style={[styles.controlButton, { backgroundColor: colors.white }]} onPress={centerOnUser}>
-              <Text style={styles.controlButtonText}>📍</Text>
-            </TouchableOpacity>
-          )}
+          {/* Botones de control */}
+          <View style={styles.controlButtons}>
+            {/* Botón de ubicación */}
+            {location && (
+              <TouchableOpacity style={[styles.controlButton, { backgroundColor: colors.white }]} onPress={centerOnUser}>
+                <Text style={styles.controlButtonText}>📍</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
 
@@ -546,64 +604,16 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Buscador - Parte inferior SIEMPRE presente */}
-      <View style={[styles.searchContainer, { backgroundColor: colors.white }]}>
-        <View style={styles.searchInput}>
-          <View style={[styles.searchIcon, { backgroundColor: colors.gray100 }]}>
-            <Text>🔍</Text>
-          </View>
-          
-          <TextInput
-            style={[styles.textInput, { color: colors.gray700 }]}
-            placeholder="Buscador"
-            placeholderTextColor={colors.gray400}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-
-        {/* Resultados de búsqueda - Solo cuando hay texto */}
-        {searchText.length > 0 && (
-          <View style={[styles.searchResults, { borderTopColor: colors.gray200 }]}>
-            <ScrollView>
-              {filteredStops.map((stop) => (
-                <TouchableOpacity
-                  key={stop.id}
-                  style={[styles.searchResult, { borderBottomColor: colors.gray100 }]}
-                  onPress={() => {
-                    setSearchText(stop.name);
-                    if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: stop.latitude,
-                        longitude: stop.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 1000);
-                    }
-                  }}
-                >
-                  <View style={[styles.searchResultIcon, { backgroundColor: colors.secondary + '20' }]}>
-                    <Text>🚏</Text>
-                  </View>
-                  
-                  <View style={styles.searchResultInfo}>
-                    <Text style={[styles.searchResultTitle, { color: colors.gray800 }]}>{stop.name}</Text>
-                    <Text style={[styles.searchResultSubtitle, { color: colors.gray500 }]}>
-                      Rutas: {stop.routes.join(', ')}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              
-              {filteredStops.length === 0 && (
-                <View style={styles.noResults}>
-                  <Text style={[styles.noResultsText, { color: colors.gray500 }]}>No se encontraron resultados</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        )}
-      </View>
+      {/* Google Places Search - Buscador con datos reales */}
+      <GooglePlacesSearchInteractive
+        onPlaceSelect={handlePlaceSelect}
+        placeholder="¿A dónde vas?"
+        apiKey={googleMapsApiKey}
+        countryCode="PA"
+        location={`${DAVID_COORDS.latitude},${DAVID_COORDS.longitude}`}
+        radius={50000}
+        onSearchStateChange={handleSearchStateChange}
+      />
     </View>
   );
 }
@@ -635,6 +645,9 @@ const styles = StyleSheet.create({
   busCountText: {
     ...CommonStyles.typography.small,
     fontWeight: '600',
+  },
+  controlButtons: {
+    alignItems: 'center',
   },
   controlButton: {
     width: 48,
@@ -798,5 +811,33 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     ...CommonStyles.typography.caption,
+  },
+  selectedPlaceMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  selectedPlaceMarkerText: {
+    fontSize: 20,
+  },
+  calloutDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  menuButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24) + 10,
+    left: CommonStyles.spacing.md,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+    ...CommonStyles.cardShadow,
   },
 });

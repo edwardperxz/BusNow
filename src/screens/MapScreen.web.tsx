@@ -53,19 +53,19 @@ interface BusStop {
 
 const { width, height } = Dimensions.get('window');
 
-// Coordenadas de Lima, Perú por defecto
-const LIMA_COORDS = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
+// Coordenadas de David, Chiriquí, Panamá por defecto
+const DAVID_COORDS = {
+  latitude: 8.4333,
+  longitude: -82.4333,
+  latitudeDelta: 0.0922,
+  longitudeDelta: 0.0421,
 };
 
 export default function MapScreen() {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const [region, setRegion] = useState(LIMA_COORDS);
+  const [region, setRegion] = useState(DAVID_COORDS);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [busStops, setBusStops] = useState<BusStop[]>([]);
@@ -74,7 +74,7 @@ export default function MapScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  // Datos simulados para Lima con coordenadas reales
+  // Datos simulados para David, Chiriquí con coordenadas reales
   const simulatedBuses: Bus[] = [
     {
       id: 'BN-001',
@@ -126,13 +126,13 @@ export default function MapScreen() {
     }
   ];
 
-  // Datos simulados de paradas de bus (Lima, Perú)
+  // Datos simulados de paradas de bus (David, Chiriquí, Panamá)
   const simulatedBusStops: BusStop[] = [
     { 
       id: 'stop_001', 
-      name: 'Centro de Lima', 
-      latitude: -12.0464, 
-      longitude: -77.0428, 
+      name: 'Centro de David', 
+      latitude: 8.4333, 
+      longitude: -82.4333, 
       routes: ['Verde', 'Azul'] 
     },
     { 
@@ -211,7 +211,7 @@ export default function MapScreen() {
     if (mapRef.current && window.google) {
       const map = new window.google.maps.Map(mapRef.current, {
         zoom: 13,
-        center: { lat: LIMA_COORDS.latitude, lng: LIMA_COORDS.longitude },
+        center: { lat: DAVID_COORDS.latitude, lng: DAVID_COORDS.longitude },
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,
@@ -359,7 +359,7 @@ export default function MapScreen() {
       setRegion(newRegion);
     } catch (error) {
       console.error('Error al obtener ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación. Mostrando Lima por defecto.');
+      Alert.alert('Error', 'No se pudo obtener tu ubicación. Mostrando David por defecto.');
     } finally {
       setIsLoading(false);
     }
@@ -422,7 +422,7 @@ export default function MapScreen() {
           <View style={[styles.map, styles.webMapFallback]}>
             <Text style={styles.webMapText}>
               🗺️ Cargando mapa interactivo...{'\n'}
-              Google Maps • Lima, Perú{'\n\n'}
+              Google Maps • David, Chiriquí, Panamá{'\n\n'}
               • {buses.length} buses en tiempo real{'\n'}
               • {busStops.length} paradas de autobús{'\n'}
               • Navegación completa{'\n'}

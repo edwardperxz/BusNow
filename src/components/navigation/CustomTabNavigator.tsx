@@ -10,11 +10,13 @@ import HamburgerMenu from './HamburgerMenu';
 import HamburgerButton from './HamburgerButton';
 import { BusNowColors, getTheme } from '../../styles/colors';
 import { useSettings } from '../../context/SettingsContext';
+import { useSearch } from '../../context/SearchContext';
 
 const CustomTabNavigator: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState('map');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme } = useSettings();
+  const { searchState } = useSearch();
   const colors = getTheme(theme === 'dark');
 
   const toggleMenu = () => {
@@ -52,8 +54,8 @@ const CustomTabNavigator: React.FC = () => {
         {renderScreen()}
       </View>
 
-      {/* Botón hamburguesa - Solo mostrar si no estamos en configuración y el menú está cerrado */}
-      {activeScreen !== 'settings' && !isMenuOpen && (
+      {/* Botón hamburguesa - Ocultar si estamos en configuración, el menú está abierto, o el buscador está expandido */}
+      {activeScreen !== 'settings' && !isMenuOpen && searchState !== 'expanded' && (
         <HamburgerButton 
           onPress={toggleMenu} 
           isOpen={isMenuOpen} 
