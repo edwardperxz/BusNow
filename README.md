@@ -1,94 +1,150 @@
-# 🚌 BusNow - Sistema de Tracking de Buses en Tiempo Real
+# 🚌 BusNow MVP - Especificaciones (Firebase Backend)
 
-> **Aplicación móvil multiplataforma para seguimiento de transporte público en Chiriquí, Panamá. Desarrollada con React Native, Expo y TypeScript.**
-
----
-
-## 📋 MVP COMPLETE SUMMARY - Estado Actual del Proyecto
-
-### 🎯 Visión General
-BusNow es una aplicación móvil nativa (iOS/Android) que permite visualizar rutas de transporte público en mapas interactivos, buscar ubicaciones con Google Places API, y navegar entre diferentes pantallas con una interfaz moderna y fluida. El MVP actual está **100% funcional** sin necesidad de backend, usando solo APIs de Google Maps para geolocalización y trazado de rutas reales.
+> **MVP con backend completamente gestionado en Firebase (Firestore + Cloud Functions + Auth). Sin servidor propio Express: toda la lógica de tiempo real y cálculo de ETA vive en Firebase.**
 
 ---
 
-## 🏗️ ARQUITECTURA Y ESTRUCTURA ACTUAL
+## 📋 Resumen del MVP
+
+### 🎯 Objetivo
+Calcular y mostrar ETA (tiempo estimado de llegada) dinámico de buses y visualizar su movimiento en tiempo real. El conductor envía su ubicación cada 5 segundos a Firestore y el usuario ve las actualizaciones instantáneamente mediante listeners en tiempo real (onSnapshot). El cálculo de ETA se realiza vía Cloud Function callable que consume Google Directions API.
+
+### 🔑 Decisiones Clave
+- Backend = Firebase (Firestore, Auth, Functions). No se usa servidor Node propio.
+- Tracking = Firestore listeners (pseudo WebSocket).
+- ETA dinámico = Cloud Function `calculateETA` usando Google Directions API.
+- Autenticación = Firebase Auth (Email/Password / más proveedores futuros).
+- Seguridad = Reglas de Firestore + Callable Functions + separación de claves.
+
+---
+
+## 🏗️ Arquitectura y Estructura
 
 ### 📁 Estructura de Carpetas Detallada
 
 ```
 BusNow/
-├── 📱 src/
-│   ├── components/                      # Componentes reutilizables
-│   │   ├── navigation/                  # Sistema de navegación
-│   │   │   ├── CustomTabNavigator.tsx       # Tab bar principal (4 pantallas)
-│   │   │   ├── AnimatedTabBar.tsx           # Tab bar animado con transiciones
-│   │   │   ├── HamburgerMenu.tsx            # Menú lateral deslizante (drawer)
-│   │   │   └── HamburgerButton.tsx          # Botón del menú hamburguesa
-│   │   │
-│   │   ├── GooglePlacesSearchInteractive.tsx  # Buscador con panel deslizable (3 estados)
-│   │   ├── RouteMapVisualization.tsx          # Visualización de rutas en mapa
-│   │   └── DriverDashboard.tsx                # Dashboard para conductores
-│   │
-│   ├── screens/                        # Pantallas principales
-│   │   ├── HomeScreen.tsx                  # Pantalla de inicio (tab 1)
-│   │   ├── MapScreen.tsx                   # Mapa interactivo con ruta (tab 2)
-│   │   ├── RoutesScreen.tsx                # Lista de rutas (tab 3)
-│   │   ├── RouteDetailScreen.tsx           # Detalle de ruta específica
-│   │   ├── DriverScreen.tsx                # Panel de conductor (tab 4)
-│   │   ├── DriverLoginScreen.tsx           # Login para conductores
-│   │   ├── SettingsScreen.tsx              # Configuraciones (desde menú)
-│   │   └── MapScreen.web.tsx               # Versión web del mapa
-│   │
-│   ├── context/                        # Context API para estado global
-│   │   ├── SettingsContext.tsx             # Idioma (ES/EN) y tema (claro/oscuro)
-│   │   └── SearchContext.tsx               # Estado del panel de búsqueda
-│   │
-│   ├── styles/                         # Sistema de estilos centralizado
-│   │   └── colors.ts                       # Paleta de colores, temas, utilidades
-│   │
-│   ├── translations/                   # Internacionalización (i18n)
-│   │   ├── en.json                         # Traducciones en inglés
-│   │   └── es.json                         # Traducciones en español
-│   │
-│   ├── types/                          # Definiciones TypeScript
-│   │   └── index.ts                        # Interfaces y tipos globales
-│   │
-│   └── utils/                          # Utilidades y helpers
-│       └── polyline.ts                     # Decodificador de polylines de Google
-│
-├── 🎨 assets/                          # Recursos estáticos
-│   ├── adaptive-icon.png                   # Icono adaptativo (Android)
-│   ├── icon.png                            # Icono de la app
-│   ├── favicon.png                         # Favicon (web)
-│   └── splash-icon.png                     # Logo del splash screen
-│
-├── ⚙️ Archivos de configuración:
-│   ├── App.tsx                             # Componente raíz con providers
-│   ├── index.js                            # Punto de entrada
-│   ├── app.json                            # Configuración Expo (permisos, splash, etc)
-│   ├── eas.json                            # Configuración EAS Build
-│   ├── package.json                        # Dependencias y scripts
-│   ├── tsconfig.json                       # Configuración TypeScript
-│   ├── babel.config.js                     # Configuración Babel
-│   ├── metro.config.js                     # Bundler de React Native
-│   ├── nativewind-env.d.ts                 # Tipos para NativeWind
-│   ├── global.css                          # Estilos globales Tailwind
-│   ├── configure-app.js                    # Script de configuración automática
-│   ├── configure-app.sh                    # Script de configuración (shell)
-│   └── deploy.sh                           # Script de deployment
-│
-└── 📄 Documentación:
-    ├── README.md                           # Este archivo
-    ├── PALETA_COLORES.md                   # Guía de colores y diseño
-    ├── DEPLOYMENT.md                       # Guía de deployment
-    └── EAS_COMMANDS.md                     # Comandos EAS Build
+├── src/
+│   ├── components/               # Componentes reutilizables UI
+│   ├── screens/                  # Pantallas (Map, Home, Driver, etc.)
+│   ├── services/
+│   │   ├── firebaseApp.ts        # Inicialización Firebase
+│   │   └── firebaseBusTracking.ts # Tracking en Firestore (envío/escucha)
+│   ├── hooks/
+│   │   └── useDynamicETA.ts      # Hook para ETA usando Cloud Function
+│   ├── utils/                    # Helpers (polyline decode, etc.)
+│   ├── context/                  # Settings / búsqueda / tema
+│   └── styles/                   # Paleta y estilos compartidos
+├── firebase/
+│   └── functions/
+│       ├── package.json          # Dependencias de Cloud Functions
+│       └── index.js              # Function callable calculateETA
+├── assets/                       # Iconos, imágenes
+├── .env                          # Variables de entorno (cliente)
+├── .env.example                  # Ejemplo sin secretos
+├── firebase.json                 # Configuración de funciones
+├── app.json                      # Configuración Expo
+├── package.json                  # Dependencias frontend
+└── README.md                     # Documentación del proyecto
 ```
 
 ---
 
 ## 🎯 FUNCIONALIDADES IMPLEMENTADAS (DETALLADO)
 
-### 1️⃣ **Sistema de Navegación Completo**
+### 1️⃣ Core Funcionalidades MVP
+
+1. Conductor (app con sesión iniciada) envía ubicación cada `EXPO_PUBLIC_LOCATION_UPDATE_INTERVAL` ms usando `firebaseBusTracking.ts` → documento `buses/{busId}`.
+2. Usuario escucha cambios en colección/ documento de buses con `onSnapshot` → actualiza marcadores en mapa en tiempo real.
+3. Usuario selecciona una parada → se guarda estado local `selectedStop`.
+4. Hook `useDynamicETA` detecta cambios de ubicación del bus y llama Cloud Function `calculateETA` (callable) con `{ busLocation, stopLocation }`.
+5. Respuesta incluye `durationSeconds`, `durationText`, `distanceMeters`, `distanceText`, `polyline` → se dibuja polyline decodificada en mapa y se muestra panel ETA.
+6. Recalculo automático cada vez que el documento del bus cambia (nuevo snapshot) con un debounce mínimo para evitar spam.
+
+### 2️⃣ Cloud Function `calculateETA`
+Archivo: `firebase/functions/index.js`
+
+Responsable de:
+- Recibir coordenadas de bus y parada
+- Construir request a Google Directions API (modo driving, traffic real time)
+- Parsear route y leg → devolver datos más polyline
+- Manejo de errores estándar con `HttpsError`
+
+Ejemplo (ya implementado) simplificado:
+```js
+exports.calculateETA = functions.https.onCall(async (data) => {
+  const { busLocation, stopLocation } = data;
+  // ... llamada axios a Directions ...
+  return { ok: true, eta: { durationSeconds, distanceMeters, polyline } };
+});
+```
+
+### 3️⃣ Tracking Firestore
+Documento por bus (`buses/{busId}`) con esquema mínimo:
+```json
+{
+  "busId": "bus-123",
+  "latitude": 8.43,
+  "longitude": -82.43,
+  "heading": 90,
+  "speed": 35,
+  "updatedAt": 1731300000000,
+  "updatedAtTimestamp": FirestoreServerTimestamp
+}
+```
+Listeners en usuario y conductor reutilizan el mismo documento (no duplicación). Para múltiples buses, se observaría `collection('buses')` con filtros futuros (rutas activas, etc.).
+
+### 4️⃣ Hook de ETA (`useDynamicETA.ts`)
+- Escucha documento del bus.
+- Trigger de cálculo al cambiar lat/long.
+- Debounce simple (≥1500ms) para evitar llamada excesiva.
+- Usa `httpsCallable` para invocar function.
+- Devuelve `{ eta, loading, error }` listo para UI.
+
+### 5️⃣ UI de Mapa
+- Marcadores de buses basados en snapshot Firestore.
+- Polyline se actualiza al cambiar `eta.polyline`.
+- Panel ETA muestra tiempo en minutos y distancia.
+
+### 6️⃣ Autenticación
+- Firebase Auth (email/password) inicializable desde `firebaseApp.ts`.
+- Conductores requieren login para emitir ubicación (reglas Firestore pueden restringir escritura a rol=driver).
+
+### 7️⃣ Seguridad y Reglas Firestore
+Archivo: `firestore.rules`
+
+**Reglas implementadas**:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Lectura pública de buses (MVP)
+    // Escritura solo para conductores autenticados con rol 'driver'
+    match /buses/{busId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+                     (request.auth.token.role == 'driver' || 
+                      request.auth.token.admin == true);
+    }
+
+    // Denegar acceso por defecto a otras colecciones
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+**Implementación de roles**:
+Para asignar el rol `driver` a un usuario, usar Firebase Admin SDK:
+```javascript
+admin.auth().setCustomUserClaims(uid, { role: 'driver' });
+```
+
+**Desplegar reglas**:
+```bash
+firebase deploy --only firestore:rules
+```
 
 #### **Tab Navigator Principal** (`CustomTabNavigator.tsx`)
 - **4 pantallas principales** accesibles desde tab bar inferior:
@@ -393,7 +449,19 @@ const { t } = useSettings();
 
 ---
 
-### 7️⃣ **Utilidades y Helpers**
+### 8️⃣ Variables de Entorno
+
+Se reutilizan las existentes (todas expuestas vía Expo porque son claves públicas de cliente). Agregada `FIREBASE_ADMIN_SDK_KEY` placeholder solo para despliegue seguro si se necesitara algún script adicional (no usada en app cliente).
+
+```
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=...
+EXPO_PUBLIC_FIREBASE_API_KEY=...
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
+EXPO_PUBLIC_LOCATION_UPDATE_INTERVAL=5000
+FIREBASE_ADMIN_SDK_KEY= (no se expone en cliente, solo CI/CD o funciones)
+```
+
+Cloud Functions usa `process.env.GOOGLE_MAPS_API_KEY` o fallback a la pública (recomendado configurar variable segura en panel Firebase Functions para no depender de la pública).
 
 #### **Decodificador de Polyline** (`utils/polyline.ts`)
 ```typescript
@@ -406,7 +474,18 @@ decodePolyline(encoded: string): Array<{latitude: number, longitude: number}>
 
 ---
 
-## 🔧 STACK TECNOLÓGICO DETALLADO
+## 🔧 Stack Tecnológico MVP Firebase
+
+| Capa | Tecnología | Uso |
+|------|------------|-----|
+| Frontend | React Native + Expo | UI móvil y web dev |
+| Auth | Firebase Auth | Sesión conductor / usuarios futuros |
+| Tiempo Real | Firestore listeners | Actualización de ubicación cada ≤5s |
+| Backend Funcional | Cloud Functions callable | Cálculo ETA y futura lógica agregada |
+| Mapas | Google Maps (Directions + Maps) | Rutas y ETA dinámico |
+| Estado local | Hooks/Context | Configuración, tema, idioma |
+
+No existe servidor Express ni Socket.io: simplifica mantenimiento y costo en esta etapa inicial.
 
 ### **Dependencias Principales** (package.json)
 
@@ -755,7 +834,24 @@ const initializeLocation = async () => {
 
 ---
 
-## 📊 ESTADO ACTUAL DEL MVP
+## 📊 Estado Actual del MVP
+
+| Feature | Estado |
+|---------|--------|
+| Envío ubicación conductor (Firestore) | ✅ Implementado (servicio) |
+| Listener buses en tiempo real | ✅ Implementado |
+| Cloud Function ETA | ✅ Implementada |
+| Hook ETA dinámico | ✅ Implementado |
+| Polyline dinámica en mapa | ✅ Base lista (requiere wiring final en MapScreen) |
+| Autenticación básica | ⚠️ Inicialización lista (UI login pendiente) |
+| Reglas Firestore | ⚠️ Por definir y aplicar |
+| Optimización llamadas ETA (cache/debounce) | ✅ Debounce básico |
+| Múltiples buses simultáneos | ⚠️ Escalable (colección) |
+| Roles (driver vs user) | ⚠️ Pendiente en custom claims |
+| Manejo de errores avanzado | ⚠️ Pendiente (reintentos, fallback ETA previa) |
+| Tests unitarios Functions | ⚠️ Pendiente |
+
+Definición de DONE para este MVP Firebase: ubicación emitida y escuchada en tiempo real + ETA recalculado al mover bus + polyline mostrada.
 
 ### ✅ **Completamente Funcional**
 - ✅ Navegación entre pantallas (4 tabs + drawer)
@@ -791,7 +887,18 @@ const initializeLocation = async () => {
 
 ---
 
-## 🎯 PRÓXIMOS PASOS SUGERIDOS
+## 🚀 Próximos Pasos Recomendados
+
+1. Integrar UI de login conductor y proteger escritura de `buses/{busId}` por rol.
+2. Añadir componente `ETADisplay` que consuma `useDynamicETA`.
+3. Dibujar polyline dinámico en `MapScreen` (usar `eta.polyline`).
+4. Cache local simple de última ETA para evitar flicker.
+5. Reglas Firestore de seguridad y separación de entornos (dev/prod).
+6. Implementar función adicional `calculateMultipleETAs` para varias paradas.
+7. Cloud Function programada (pub/sub) para limpieza de buses inactivos (>2m sin update).
+8. Añadir tests con Firebase Emulator (Functions + Firestore).
+9. Migrar API Key a config segura (`firebase functions:config:set maps.key=...`).
+10. Indicador visual de actualización (spinner/ pulso marcador bus).
 
 ### **Fase 1: Backend y Base de Datos**
 1. Configurar backend (Node.js + Express + PostgreSQL/MongoDB)
@@ -838,7 +945,173 @@ const initializeLocation = async () => {
 
 ---
 
-## 🧪 TESTING Y DEPLOYMENT
+## 🧪 Testing y Deployment (Firebase)
+
+### 📋 Prerequisitos
+1. **Instalar Firebase CLI**:
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. **Iniciar sesión en Firebase**:
+   ```bash
+   firebase login
+   ```
+
+3. **Inicializar proyecto** (si no está configurado):
+   ```bash
+   firebase init
+   # Seleccionar: Functions, Firestore
+   ```
+
+---
+
+### 🔧 Desarrollo Local con Emuladores
+
+Los emuladores permiten probar Functions y Firestore sin costo ni afectar producción:
+
+```bash
+# Iniciar emuladores
+firebase emulators:start --only functions,firestore
+
+# O con UI web
+firebase emulators:start --only functions,firestore --import=./emulator-data
+```
+
+**Configurar app para usar emuladores** (en desarrollo):
+```typescript
+// src/services/firebaseApp.ts
+if (__DEV__) {
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFunctionsEmulator(fn, 'localhost', 5001);
+}
+```
+
+---
+
+### 🚀 Deploy a Producción
+
+#### **1. Deploy Cloud Functions**
+
+```bash
+# Navegar a carpeta de functions
+cd firebase/functions
+
+# Instalar dependencias
+npm install
+
+# Configurar API Key segura (recomendado)
+firebase functions:config:set maps.key="TU_GOOGLE_MAPS_API_KEY_PRIVADA"
+
+# Ver configuración actual
+firebase functions:config:get
+
+# Deploy
+firebase deploy --only functions
+
+# Deploy función específica
+firebase deploy --only functions:calculateETA
+```
+
+**Nota importante sobre API Keys**:
+- La Cloud Function usa: `functions.config().maps.key` → `process.env.GOOGLE_MAPS_API_KEY` → `process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`
+- **Recomendado**: Configurar `maps.key` con clave privada para evitar límites de cuota
+
+#### **2. Deploy Reglas de Firestore**
+
+```bash
+# Deploy solo reglas de seguridad
+firebase deploy --only firestore:rules
+
+# Verificar reglas antes de deploy (dry run)
+firebase deploy --only firestore:rules --debug
+```
+
+#### **3. Deploy Completo**
+
+```bash
+# Deploy todo (Functions + Firestore rules + Hosting si existe)
+firebase deploy
+
+# Deploy con mensaje
+firebase deploy -m "Agregar calculateETA con tráfico real"
+```
+
+---
+
+### 🔑 Configuración de Variables de Entorno
+
+**En Cloud Functions** (seguras, no expuestas):
+```bash
+# Configurar múltiples variables
+firebase functions:config:set \
+  maps.key="AIzaSy..." \
+  app.env="production"
+
+# Eliminar variable
+firebase functions:config:unset maps.key
+
+# Exportar a archivo local para emuladores
+firebase functions:config:get > .runtimeconfig.json
+```
+
+**En App Cliente** (públicas, vía Expo):
+```bash
+# .env o src/.env
+EXPO_PUBLIC_FIREBASE_API_KEY=...
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=...
+```
+
+---
+
+### 📊 Monitoreo Post-Deploy
+
+```bash
+# Ver logs de Functions en tiempo real
+firebase functions:log --only calculateETA
+
+# Ver logs con filtro
+firebase functions:log --only calculateETA --lines 100
+
+# Abrir consola de Firebase
+firebase open
+```
+
+**Dashboard de Firebase Console**:
+- Functions: Métricas de invocaciones, errores, duración
+- Firestore: Cantidad de lecturas/escrituras, índices
+- Authentication: Usuarios activos, métodos de login
+
+---
+
+### ⚠️ Troubleshooting Común
+
+**Error: "Permission denied"**
+```bash
+# Re-autenticarse
+firebase login --reauth
+```
+
+**Error: "Cannot find module"**
+```bash
+cd firebase/functions
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Function no se actualiza**
+```bash
+# Forzar re-deploy
+firebase deploy --only functions --force
+```
+
+**Emuladores no inician**
+```bash
+# Limpiar puertos
+lsof -ti:5001 | xargs kill  # Functions
+lsof -ti:8080 | xargs kill  # Firestore
+```
 
 ### **Cómo Ejecutar el Proyecto**
 
@@ -948,7 +1221,9 @@ npm run submit:ios      # App Store
 
 ---
 
-## 🎉 ¡LISTO PARA CONTINUAR!
+## 🎉 Estado Final y Continuidad
+
+El proyecto está alineado al enfoque Firebase-only. No hay servidor Node personalizado que mantener. Escalar implica añadir más funciones (p.ej. agregación histórica, limpieza, múltiples ETAs) y endurecer reglas y autenticación por roles.
 
 Este MVP está **100% funcional** y listo para ser extendido. Las bases están sólidas:
 - ✅ Arquitectura escalable
@@ -964,7 +1239,7 @@ Este MVP está **100% funcional** y listo para ser extendido. Las bases están s
 
 ---
 
-*Desarrollado con ❤️ por Zeteki | Noviembre 2025*
+*Desarrollado por Zeteki | Noviembre 2025*
 
 ### 🎯 **Problema que Resuelve:**
 - **Incertidumbre en tiempos de espera** del transporte público en Chiriquí

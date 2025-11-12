@@ -18,6 +18,9 @@ import { useSettings } from '../context/SettingsContext';
 import { useSearch } from '../context/SearchContext';
 import GooglePlacesSearchInteractive from '../components/GooglePlacesSearchInteractive';
 import { decodePolyline } from '../utils/polyline';
+import busTrackingService, { BusLocation } from '../services/firebaseBusTracking';
+import { DEMO_MODE } from '../demo/demoConfig';
+import { useDynamicETA } from '../hooks/useDynamicETA';
 
 const { width, height } = Dimensions.get('window');
 
@@ -230,6 +233,16 @@ export default function MapScreen() {
   const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[]>([]);
   const [routeOrigin, setRouteOrigin] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
   const [routeDestination, setRouteDestination] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
+  const [buses, setBuses] = useState<BusLocation[]>([]);
+  const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
+  const stopLocation = routeDestination
+    ? { latitude: routeDestination.latitude, longitude: routeDestination.longitude }
+    : null;
+  const { eta, loading: etaLoading, error: etaError } = useDynamicETA({
+    busId: selectedBusId || '',
+    stopLocation,
+    enabled: Boolean(selectedBusId && stopLocation)
+  });
   
   // Google Maps API Key from environment
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
@@ -258,6 +271,20 @@ export default function MapScreen() {
     initializeLocation();
     fetchRoute(); // Obtener ruta al inicializar
   }, []);
+
+  // Suscripción a buses activos en Firestore
+  useEffect(() => {
+    const unsubscribe = busTrackingService.onActiveBuses((list) => {
+      setBuses(list);
+      // Si el bus seleccionado desaparece, limpiarlo
+      if (selectedBusId && !list.find(b => b.busId === selectedBusId)) {
+        setSelectedBusId(null);
+      }
+    });
+    return () => {
+      unsubscribe && unsubscribe();
+    };
+  }, [selectedBusId]);
 
   // Función para obtener ruta entre dos puntos usando Google Directions API
   const fetchRoute = async () => {
@@ -370,6 +397,17 @@ export default function MapScreen() {
           mapType="standard"
           customMapStyle={isDark ? darkMapStyle : undefined}
         >
+          {/* Marcadores de buses activos (Firestore) */}
+          {buses.map((bus) => (
+            <Marker
+              key={bus.busId}
+              coordinate={{ latitude: bus.latitude, longitude: bus.longitude }}
+              title={`Bus ${bus.busId}`}
+              description={bus.updatedAt ? `Actualizado: ${new Date(bus.updatedAt).toLocaleTimeString()}` : undefined}
+              pinColor={selectedBusId === bus.busId ? '#0066FF' : '#2F80ED'}
+              onPress={() => setSelectedBusId(bus.busId)}
+            />
+          ))}
           {/* Ruta trazada */}
           {routeCoordinates.length > 0 && (
             <>
@@ -380,6 +418,28 @@ export default function MapScreen() {
                 lineCap="round"
                 lineJoin="round"
               />
+              {/* Polyline de ETA (bus -> destino) si existe */}
+              {eta?.polyline && (
+                <Polyline
+                  coordinates={decodePolyline(eta.polyline)}
+                  strokeColor="#2F80ED"
+                  strokeWidth={4}
+                  lineDashPattern={[6, 6]}
+                />
+              )}
+              {/* Fallback demo: línea directa si no hay polyline */}
+              {!eta?.polyline && selectedBusId && stopLocation && (() => {
+                const bus = buses.find(b => b.busId === selectedBusId);
+                if (!bus) return null;
+                return (
+                  <Polyline
+                    coordinates={[{ latitude: bus.latitude, longitude: bus.longitude }, stopLocation]}
+                    strokeColor="#2F80ED"
+                    strokeWidth={3}
+                    lineDashPattern={[4, 8]}
+                  />
+                );
+              })()}
               {/* Marcador de origen */}
               {routeOrigin && (
                 <Marker
@@ -430,6 +490,12 @@ export default function MapScreen() {
 
         {/* Controles del mapa - Centro derecha */}
         <View style={styles.mapControls}>
+          {/* Badge con cantidad de buses activos */}
+          <View style={[styles.busCountBadge, { backgroundColor: colors.white }]}> 
+            <Text style={[styles.busCountText, { color: colors.gray800 }]}>
+              {buses.length} buses activos
+            </Text>
+          </View>
           {/* Botones de control */}
           <View style={styles.controlButtons}>
             {/* Botón de ubicación */}
@@ -439,7 +505,40 @@ export default function MapScreen() {
               </TouchableOpacity>
             )}
           </View>
+
+          {/* Banner DEMO */}
+          {DEMO_MODE && (
+            <View style={[styles.demoBanner, { backgroundColor: colors.accent }]}> 
+              <Text style={{ color: '#fff', fontWeight: '700' }}>MODO DEMO</Text>
+            </View>
+          )}
         </View>
+
+        {/* Overlay ETA */}
+        {selectedBusId && stopLocation && (
+          <View style={[styles.etaCard, { backgroundColor: colors.white }]}> 
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.etaTitle, { color: colors.gray900 }]}>ETA</Text>
+              <Text style={{ color: colors.gray600 }}>Bus {selectedBusId}</Text>
+            </View>
+            {etaLoading ? (
+              <Text style={{ color: colors.gray700 }}>Calculando…</Text>
+            ) : etaError ? (
+              <Text style={{ color: '#D32F2F' }}>Error: {etaError}</Text>
+            ) : eta ? (
+              <>
+                <Text style={[styles.etaMain, { color: colors.gray900 }]}>{eta.durationText} · {eta.distanceText}</Text>
+                {!!eta.startAddress && !!eta.endAddress && (
+                  <Text style={{ color: colors.gray600 }} numberOfLines={2}>
+                    {eta.startAddress} → {eta.endAddress}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text style={{ color: colors.gray700 }}>Selecciona un bus para ver ETA</Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Google Places Search - Buscador con datos reales */}
@@ -497,6 +596,36 @@ const styles = StyleSheet.create({
   },
   controlButtonText: {
     fontSize: 20,
+  },
+  etaCard: {
+    position: 'absolute',
+    left: CommonStyles.spacing.md,
+    right: CommonStyles.spacing.md,
+    bottom: 120,
+    borderRadius: CommonStyles.borderRadius.medium,
+    padding: CommonStyles.spacing.md,
+    ...CommonStyles.cardShadow,
+    zIndex: 200,
+  },
+  demoBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24) + 10,
+    right: CommonStyles.spacing.md,
+    borderRadius: CommonStyles.borderRadius.small,
+    paddingHorizontal: CommonStyles.spacing.md,
+    paddingVertical: 6,
+    ...CommonStyles.cardShadow,
+    zIndex: 999,
+  },
+  etaTitle: {
+    ...CommonStyles.typography.bodyMedium,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  etaMain: {
+    ...CommonStyles.typography.body,
+    fontWeight: '700',
+    marginTop: 2,
   },
   busMarker: {
     width: 40,
