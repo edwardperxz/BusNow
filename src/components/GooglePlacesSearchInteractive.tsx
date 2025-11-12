@@ -84,7 +84,7 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
   const SEARCH_HEIGHT = height * 0.95; // Ajustado para coincidir con la imagen
   const NEUTRAL_OFFSET = 0; // Posición neutral (completamente visible)
   const PARTIAL_OFFSET = SEARCH_HEIGHT - 280; // Neutral más visible para mejor accesibilidad
-  const HIDDEN_OFFSET = SEARCH_HEIGHT - 80; // Hidden más visible para fácil acceso
+  const HIDDEN_OFFSET = SEARCH_HEIGHT - 60; // Hidden más visible para mejor accesibilidad
   
   const { theme } = useSettings();
   const colors = getTheme(theme === 'dark');
@@ -107,15 +107,23 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
 
   const memoizedStyles = dynamicStyles();
 
+  const forceDismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+    if (textInputRef.current) {
+      try { textInputRef.current.blur(); } catch {}
+    }
+    setTimeout(() => {
+      Keyboard.dismiss();
+      if (textInputRef.current) {
+        try { textInputRef.current.blur(); } catch {}
+      }
+    }, 50);
+  }, []);
+
   useEffect(() => {
     loadRecentPlaces();
-    // Animación de entrada suave y acogedora
-    Animated.timing(translateY, {
-      toValue: PARTIAL_OFFSET,
-      duration: 300, // Entrada más rápida y directa
-      easing: Easing.linear, // Sin rebote, completamente lineal
-      useNativeDriver: false,
-    }).start();
+    // Posición inicial directa sin animación
+    translateY.setValue(PARTIAL_OFFSET);
     // Notificar el estado inicial
     if (onSearchStateChange) {
       onSearchStateChange('neutral');
@@ -128,6 +136,14 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
       onSearchStateChange(searchState);
     }
   }, [searchState, onSearchStateChange]);
+
+  // Asegurar cierre de teclado siempre que se pase a hidden (iOS-safe)
+  useEffect(() => {
+    if (searchState === 'hidden') {
+      // Ejecutar al finalizar el frame para no competir con la animación
+      requestAnimationFrame(() => forceDismissKeyboard());
+    }
+  }, [searchState, forceDismissKeyboard]);
 
   // Lógica de toques en la barra para cambiar estados
   const handleDragBarPress = () => {
@@ -153,35 +169,62 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
   const onHandlerStateChange = (event: any) => {
     if (event.nativeEvent.oldState === State.ACTIVE) {
       const { translationY, velocityY } = event.nativeEvent;
-      
-      // Resetear inmediatamente el valor del gesto para evitar glitches
+
+      // Resetear valor del gesto
       gestureTranslateY.setValue(0);
-      
-      // Umbrales simplificados para el orden cíclico
-      const isGestureUp = velocityY < -300 || translationY < -50; // Hacia arriba
-      const isGestureDown = velocityY > 300 || translationY > 50; // Hacia abajo
-      
-      // Orden cíclico: neutral → expanded → neutral → hidden → neutral → expanded
-      if (isGestureUp) {
-        // ⬆️ DESLIZAR HACIA ARRIBA (avanzar en el ciclo)
-        if (searchState === 'neutral') {
-          setToExpandedState(); // neutral → expanded
-        } else if (searchState === 'expanded') {
-          setToNeutralState(); // expanded → neutral
-        } else if (searchState === 'hidden') {
-          setToNeutralState(); // hidden → neutral
+
+      // Detectar dirección principal
+      const movingDown = velocityY > 0 || translationY > 0;
+      const movingUp = velocityY < 0 || translationY < 0;
+
+      // Intensidad del gesto (distancia y velocidad combinadas)
+      const speed = Math.abs(velocityY);
+      const distance = Math.abs(translationY);
+      const strong = speed > 800 || distance > 120; // gesto decidido
+      const medium = speed > 400 || distance > 60;  // gesto claro
+
+      if (movingDown) {
+        // Nueva lógica: desde expanded bajar siempre a hidden (cerrar y ocultar teclado)
+        if (searchState === 'expanded') {
+          setToHiddenState();
+          return;
         }
-      } else if (isGestureDown) {
-        // ⬇️ DESLIZAR HACIA ABAJO (avanzar en el ciclo)
+        // Desde neutral: gesto fuerte a hidden, gesto medio también, gesto leve queda neutral
         if (searchState === 'neutral') {
-          setToHiddenState(); // neutral → hidden
-        } else if (searchState === 'expanded') {
-          setToNeutralState(); // expanded → neutral
-        } else if (searchState === 'hidden') {
-          setToNeutralState(); // hidden → neutral
+          if (medium) {
+            setToHiddenState();
+          } else {
+            // gesto leve: no cambiar
+            setToNeutralState();
+          }
+          return;
+        }
+        // Desde hidden: mantener hidden
+        if (searchState === 'hidden') {
+          setToHiddenState();
+          return;
+        }
+      } else if (movingUp) {
+        // Subir: desde hidden a neutral siempre
+        if (searchState === 'hidden') {
+          setToNeutralState();
+          return;
+        }
+        // Desde neutral a expanded con gesto medio/fuerte, leve mantiene neutral
+        if (searchState === 'neutral') {
+          if (medium) {
+            setToExpandedState();
+          } else {
+            setToNeutralState();
+          }
+          return;
+        }
+        // Desde expanded un gesto hacia arriba mantiene expanded
+        if (searchState === 'expanded') {
+          setToExpandedState();
+          return;
         }
       }
-      // Eliminé el else para gestos pequeños para evitar animaciones adicionales innecesarias
     }
   };
 
@@ -192,6 +235,8 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
     if (onSearchStateChange) {
       onSearchStateChange('hidden');
     }
+    // Ocultar teclado si estaba abierto (forzado, iOS-safe)
+    forceDismissKeyboard();
     // Detener cualquier animación en progreso para evitar glitches
     translateY.stopAnimation();
     Animated.timing(translateY, {
