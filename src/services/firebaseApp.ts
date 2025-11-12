@@ -1,6 +1,10 @@
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { initializeAuth, getAuth, Auth } from 'firebase/auth';
+// @ts-ignore - getReactNativePersistence está disponible pero TypeScript puede no reconocerlo
+import { getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -12,16 +16,28 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+// Inicializar app solo si no existe
+const app: FirebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-// Auth para React Native debe inicializarse con AsyncStorage para persistencia
-// Uso condicional de initializeAuth sólo en native; en web se mantiene getAuth
-// Para RN usar initializeAuth y fallback a memory si no está getReactNativePersistence disponible.
-// Para web omitimos auth aquí (se puede inicializar donde se necesite con getAuth(app)).
-// Nota: Auth se desactiva temporalmente para evitar errores de registro en RN.
-// Cuando se implemente login de conductores, inicializaremos Auth de forma específica para RN.
-export const auth = undefined as unknown as undefined;
-export const db = getFirestore(app);
-export const fn = getFunctions(app);
+// Inicializar Auth con persistencia AsyncStorage
+let auth: Auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+  console.log('[Firebase] Auth inicializado con AsyncStorage');
+} catch (error: any) {
+  // Si ya fue inicializado, usar getAuth
+  if (error.code === 'auth/already-initialized') {
+    auth = getAuth(app);
+    console.log('[Firebase] Auth ya estaba inicializado');
+  } else {
+    throw error;
+  }
+}
 
+const db = getFirestore(app);
+const fn = getFunctions(app);
+
+export { auth, db, fn };
 export default app;

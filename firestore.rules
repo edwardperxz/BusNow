@@ -2,16 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Buses: lectura pública, escritura para drivers autenticados
-    // TEMPORAL: permitir escrituras sin auth para modo demo/desarrollo
-    // TODO: En producción, revertir a requerir auth + role driver
+    // Buses: lectura pública para pasajeros, escritura solo para conductores autenticados
     match /buses/{busId} {
       allow read: if true;
-      // PRODUCCIÓN (comentado temporalmente):
-      // allow write: if request.auth != null && (request.auth.token.role == 'driver' || request.auth.token.admin == true);
-      
-      // DESARROLLO/DEMO (permitir escrituras sin auth):
-      allow write: if true;
+      allow write: if request.auth != null && request.auth.uid == busId; // Solo el conductor puede actualizar su propio bus
+    }
+
+    // Perfiles de usuarios
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Permitir crear perfil al registrarse
     }
 
     // Por defecto, denegar

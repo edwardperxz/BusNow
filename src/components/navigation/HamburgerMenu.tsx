@@ -24,13 +24,19 @@ interface HamburgerMenuProps {
   onToggle: () => void;
   onItemPress: (key: string) => void;
   activeItem: string;
+  userProfile?: any;
+  isAnonymous?: boolean;
+  onLogout?: () => void;
 }
 
 const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ 
   isOpen, 
   onToggle, 
   onItemPress, 
-  activeItem 
+  activeItem,
+  userProfile,
+  isAnonymous = false,
+  onLogout
 }) => {
   const { theme, t } = useSettings();
   const colors = getTheme(theme === 'dark');
@@ -41,12 +47,31 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
   // Menú más compacto (85% del ancho en lugar de 100%)
   const menuWidth = screenWidth * 0.85;
   
-  const menuItems: MenuItem[] = [
-    { key: 'map', label: 'Mapa en Tiempo Real', icon: '🗺️', color: '#2196F3' },
-    { key: 'routes', label: 'Rutas de Buses', icon: '�', color: '#FF9800' },
-    { key: 'home', label: 'Información', icon: '🏠', color: '#4CAF50' },
-    { key: 'driver', label: 'Panel Conductor', icon: '👨‍💼', color: '#9C27B0' },
-  ];
+  // Menú dinámico según el estado del usuario
+  const getMenuItems = (): MenuItem[] => {
+    const baseItems: MenuItem[] = [
+      { key: 'map', label: 'Mapa en Tiempo Real', icon: '🗺️', color: '#2196F3' },
+      { key: 'routes', label: 'Rutas de Buses', icon: '🚌', color: '#FF9800' },
+      { key: 'home', label: 'Información', icon: '🏠', color: '#4CAF50' },
+    ];
+
+    // Si es conductor autenticado, agregar Panel Conductor
+    if (userProfile?.role === 'driver') {
+      baseItems.push({ key: 'driver', label: 'Panel Conductor', icon: '👨‍💼', color: '#9C27B0' });
+    }
+
+    // Si no está logueado (anónimo), mostrar opción de login
+    if (isAnonymous || !userProfile) {
+      baseItems.push({ key: 'login', label: 'Iniciar Sesión', icon: '🔑', color: '#673AB7' });
+    } else {
+      // Si está logueado, mostrar opción de cerrar sesión
+      baseItems.push({ key: 'logout', label: 'Cerrar Sesión', icon: '🚪', color: '#F44336' });
+    }
+
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   const [shouldRender, setShouldRender] = useState(false);
 
@@ -93,8 +118,13 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
   }, [isOpen, menuWidth, slideAnim, overlayOpacity, shouldRender]);
 
   const handleItemPress = (key: string) => {
-    onItemPress(key);
-    onToggle(); // Cerrar el menú después de seleccionar
+    if (key === 'logout' && onLogout) {
+      onLogout();
+      onToggle();
+    } else {
+      onItemPress(key);
+      onToggle(); // Cerrar el menú después de seleccionar
+    }
   };
 
   const handleClosePress = () => {
@@ -203,7 +233,9 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               justifyContent: 'center',
               marginBottom: 12,
             }}>
-              <Text style={{ fontSize: 28, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>🚌</Text>
+              <Text style={{ fontSize: 28, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>
+                {userProfile?.role === 'driver' ? '🚌' : isAnonymous ? '👤' : '🧑'}
+              </Text>
             </View>
             
             <Text style={{
@@ -211,11 +243,19 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               fontWeight: '700',
               color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white,
               marginBottom: 4,
-            }}>BusNow</Text>
+            }}>
+              {userProfile?.name || 'BusNow'}
+            </Text>
             <Text style={{
               fontSize: 12,
               color: 'rgba(255, 255, 255, 0.8)',
-            }}>Tu compañero de viaje</Text>
+            }}>
+              {userProfile?.role === 'driver' 
+                ? `Conductor • Bus ${userProfile?.busNumber || ''}`
+                : isAnonymous 
+                  ? 'Modo Invitado'
+                  : userProfile?.email || 'Tu compañero de viaje'}
+            </Text>
           </View>
         </View>
 
