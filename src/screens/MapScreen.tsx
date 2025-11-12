@@ -3,44 +3,21 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   Dimensions,
-  ScrollView,
   Alert,
   Platform,
   StyleSheet,
   StatusBar
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Region, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Region, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getTheme, CommonStyles, getBusStatusColor, getRouteColor } from '../styles/colors';
+import { getTheme, CommonStyles } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 import { useSearch } from '../context/SearchContext';
 import GooglePlacesSearchInteractive from '../components/GooglePlacesSearchInteractive';
-
-interface Bus {
-  id: string;
-  latitude: number;
-  longitude: number;
-  route: string;
-  status: 'active' | 'inactive' | 'maintenance' | 'delayed';
-  capacity: 'low' | 'medium' | 'high' | 'full';
-  direction: string;
-  nextStop: string;
-  estimatedArrival: string;
-  speed: number;
-}
-
-interface BusStop {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  routes: string[];
-}
+import { decodePolyline } from '../utils/polyline';
 
 const { width, height } = Dimensions.get('window');
 
@@ -248,12 +225,11 @@ export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const [region, setRegion] = useState<Region>(DAVID_COORDS);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [buses, setBuses] = useState<Bus[]>([]);
-  const [busStops, setBusStops] = useState<BusStop[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [routeOrigin, setRouteOrigin] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
+  const [routeDestination, setRouteDestination] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
   
   // Google Maps API Key from environment
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
@@ -278,115 +254,56 @@ export default function MapScreen() {
     setSearchState(state);
   };
 
-  // Datos simulados para David, Chiriquí con coordenadas reales
-  const simulatedBuses: Bus[] = [
-    {
-      id: 'BN-001',
-      latitude: -12.0464 + (Math.random() - 0.5) * 0.02,
-      longitude: -77.0428 + (Math.random() - 0.5) * 0.02,
-      route: 'Línea Verde',
-      status: 'active',
-      capacity: 'medium',
-      direction: 'Centro → Miraflores',
-      nextStop: 'Av. Javier Prado',
-      estimatedArrival: '3 min',
-      speed: 25
-    },
-    {
-      id: 'BN-002',
-      latitude: -12.0564 + (Math.random() - 0.5) * 0.02,
-      longitude: -77.0328 + (Math.random() - 0.5) * 0.02,
-      route: 'Línea Azul',
-      status: 'active',
-      capacity: 'low',
-      direction: 'San Isidro → Callao',
-      nextStop: 'Plaza San Martín',
-      estimatedArrival: '7 min',
-      speed: 30
-    },
-    {
-      id: 'BN-003',
-      latitude: -12.0364 + (Math.random() - 0.5) * 0.02,
-      longitude: -77.0528 + (Math.random() - 0.5) * 0.02,
-      route: 'Línea Naranja',
-      status: 'delayed',
-      capacity: 'high',
-      direction: 'Villa → San Juan',
-      nextStop: 'Estación Central',
-      estimatedArrival: '12 min',
-      speed: 15
-    },
-    {
-      id: 'BN-004',
-      latitude: -12.0264 + (Math.random() - 0.5) * 0.02,
-      longitude: -77.0628 + (Math.random() - 0.5) * 0.02,
-      route: 'Línea Morada',
-      status: 'maintenance',
-      capacity: 'full',
-      direction: 'Fuera de servicio',
-      nextStop: 'Taller',
-      estimatedArrival: 'N/A',
-      speed: 0
-    }
-  ];
-
-  // Datos simulados de paradas de bus (David, Chiriquí, Panamá)
-  const simulatedBusStops: BusStop[] = [
-    { 
-      id: 'stop_001', 
-      name: 'Centro de David', 
-      latitude: 8.4333, 
-      longitude: -82.4333, 
-      routes: ['Verde', 'Azul'] 
-    },
-    { 
-      id: 'stop_002', 
-      name: 'Parque Cervantes', 
-      latitude: 8.4280, 
-      longitude: -82.4280, 
-      routes: ['Azul', 'Naranja'] 
-    },
-    { 
-      id: 'stop_003', 
-      name: 'Terminal de Buses', 
-      latitude: 8.4400, 
-      longitude: -82.4400, 
-      routes: ['Verde', 'Morada'] 
-    },
-    { 
-      id: 'stop_004', 
-      name: 'Hospital Chiriquí', 
-      latitude: 8.4250, 
-      longitude: -82.4350, 
-      routes: ['Naranja'] 
-    },
-    { 
-      id: 'stop_005', 
-      name: 'Universidad Tecnológica', 
-      latitude: 8.4100, 
-      longitude: -82.4100, 
-      routes: ['Azul', 'Morada'] 
-    }
-  ];
-
   useEffect(() => {
     initializeLocation();
-    setBuses(simulatedBuses);
-    setBusStops(simulatedBusStops);
-
-    // Simular movimiento de buses cada 5 segundos
-    const interval = setInterval(() => {
-      setBuses(prevBuses =>
-        prevBuses.map(bus => ({
-          ...bus,
-          latitude: bus.latitude + (Math.random() - 0.5) * 0.0005,
-          longitude: bus.longitude + (Math.random() - 0.5) * 0.0005,
-        }))
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
+    fetchRoute(); // Obtener ruta al inicializar
   }, []);
+
+  // Función para obtener ruta entre dos puntos usando Google Directions API
+  const fetchRoute = async () => {
+    try {
+      // Usar direcciones de texto para que Google Maps resuelva las ubicaciones exactas
+      const origin = encodeURIComponent('Parque Cervantes, David, Chiriquí, Panamá');
+      const destination = encodeURIComponent('Romero Doleguita, David, Chiriquí, Panamá');
+      
+      const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${googleMapsApiKey}&mode=driving&language=es`;
+      
+      const response = await fetch(directionsUrl);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.routes.length > 0) {
+        const route = data.routes[0];
+        const leg = route.legs[0];
+        const encodedPolyline = route.overview_polyline.points;
+        const decodedCoords = decodePolyline(encodedPolyline);
+        setRouteCoordinates(decodedCoords);
+        
+        // Guardar las coordenadas reales del origen y destino
+        setRouteOrigin({
+          latitude: leg.start_location.lat,
+          longitude: leg.start_location.lng,
+          address: leg.start_address
+        });
+        setRouteDestination({
+          latitude: leg.end_location.lat,
+          longitude: leg.end_location.lng,
+          address: leg.end_address
+        });
+        
+        console.log('Ruta obtenida exitosamente:', {
+          distance: leg.distance.text,
+          duration: leg.duration.text,
+          points: decodedCoords.length,
+          start: leg.start_address,
+          end: leg.end_address
+        });
+      } else {
+        console.error('Error al obtener ruta:', data.status, data.error_message);
+      }
+    } catch (error) {
+      console.error('Error fetching route:', error);
+    }
+  };
 
   const initializeLocation = async () => {
     try {
@@ -435,72 +352,6 @@ export default function MapScreen() {
     }
   };
 
-  const filteredStops = busStops.filter(stop =>
-    stop.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    stop.routes.some(route => route.toLowerCase().includes(searchText.toLowerCase()))
-  );
-
-  const renderBusMarker = (bus: Bus) => {
-    const routeNumber = parseInt(bus.route.split(' ')[1]?.slice(-1)) || 1;
-    
-    return (
-      <Marker
-        key={bus.id}
-        coordinate={{
-          latitude: bus.latitude,
-          longitude: bus.longitude,
-        }}
-        onPress={() => setSelectedBus(selectedBus?.id === bus.id ? null : bus)}
-      >
-        <View style={[styles.busMarker, { 
-          backgroundColor: getRouteColor(routeNumber),
-          borderColor: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white
-        }]}>
-          <Text style={[styles.busMarkerText, { color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }]}>🚌</Text>
-          <View style={[styles.statusIndicator, { 
-            backgroundColor: getBusStatusColor(bus.status),
-            borderColor: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white
-          }]} />
-        </View>
-        
-        <Callout tooltip>
-          <View style={[styles.calloutContainer, { backgroundColor: colors.white }]}>
-            <Text style={[styles.calloutTitle, { color: colors.gray800 }]}>{bus.route}</Text>
-            <Text style={[styles.calloutText, { color: colors.gray600 }]}>{bus.direction}</Text>
-            <Text style={[styles.calloutText, { color: colors.gray600 }]}>Próxima: {bus.nextStop}</Text>
-            <Text style={[styles.calloutText, { color: colors.gray600 }]}>ETA: {bus.estimatedArrival}</Text>
-          </View>
-        </Callout>
-      </Marker>
-    );
-  };
-
-  const renderBusStopMarker = (stop: BusStop) => {
-    return (
-      <Marker
-        key={stop.id}
-        coordinate={{
-          latitude: stop.latitude,
-          longitude: stop.longitude,
-        }}
-      >
-        <View style={[styles.stopMarker, { 
-          backgroundColor: colors.white,
-          borderColor: colors.secondary
-        }]}>
-          <Text style={styles.stopMarkerText}>🚏</Text>
-        </View>
-        
-        <Callout tooltip>
-          <View style={[styles.calloutContainer, { backgroundColor: colors.white }]}>
-            <Text style={[styles.calloutTitle, { color: colors.gray800 }]}>{stop.name}</Text>
-            <Text style={[styles.calloutText, { color: colors.gray600 }]}>Rutas: {stop.routes.join(', ')}</Text>
-          </View>
-        </Callout>
-      </Marker>
-    );
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.gray100 }]}>
       {/* Mapa - Área central principal */}
@@ -519,11 +370,36 @@ export default function MapScreen() {
           mapType="standard"
           customMapStyle={isDark ? darkMapStyle : undefined}
         >
-          {/* Marcadores de buses */}
-          {buses.map(renderBusMarker)}
-          
-          {/* Marcadores de paradas */}
-          {busStops.map(renderBusStopMarker)}
+          {/* Ruta trazada */}
+          {routeCoordinates.length > 0 && (
+            <>
+              <Polyline
+                coordinates={routeCoordinates}
+                strokeColor="#FF0000" // Rojo
+                strokeWidth={4}
+                lineCap="round"
+                lineJoin="round"
+              />
+              {/* Marcador de origen */}
+              {routeOrigin && (
+                <Marker
+                  coordinate={{ latitude: routeOrigin.latitude, longitude: routeOrigin.longitude }}
+                  title="Origen"
+                  description={routeOrigin.address}
+                  pinColor="green"
+                />
+              )}
+              {/* Marcador de destino */}
+              {routeDestination && (
+                <Marker
+                  coordinate={{ latitude: routeDestination.latitude, longitude: routeDestination.longitude }}
+                  title="Destino"
+                  description={routeDestination.address}
+                  pinColor="red"
+                />
+              )}
+            </>
+          )}
           
           {/* Marcador del lugar seleccionado */}
           {selectedPlace && (
@@ -554,13 +430,6 @@ export default function MapScreen() {
 
         {/* Controles del mapa - Centro derecha */}
         <View style={styles.mapControls}>
-          {/* Información de buses activos */}
-          <View style={[styles.busCountBadge, { backgroundColor: colors.white }]}>
-            <Text style={[styles.busCountText, { color: colors.gray700 }]}>
-              {buses.filter(b => b.status === 'active').length} buses activos
-            </Text>
-          </View>
-          
           {/* Botones de control */}
           <View style={styles.controlButtons}>
             {/* Botón de ubicación */}
@@ -572,37 +441,6 @@ export default function MapScreen() {
           </View>
         </View>
       </View>
-
-      {/* Información del bus seleccionado - Overlay sobre el mapa */}
-      {selectedBus && (
-        <View style={[styles.busInfo, { backgroundColor: colors.white }]}>
-          <View style={styles.busInfoHeader}>
-            <View style={[styles.busInfoIcon, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.busInfoIconText, { color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }]}>🚌</Text>
-            </View>
-            
-            <View style={styles.busInfoDetails}>
-              <Text style={[styles.busInfoTitle, { color: colors.gray800 }]}>
-                {selectedBus.route} • {selectedBus.id}
-              </Text>
-              <Text style={[styles.busInfoDirection, { color: colors.gray500 }]}>
-                {selectedBus.direction}
-              </Text>
-            </View>
-            
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: colors.gray200 }]}
-              onPress={() => setSelectedBus(null)}
-            >
-              <Text style={[styles.closeButtonText, { color: colors.gray600 }]}>×</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={[styles.busInfoNextStop, { color: colors.primary }]}>
-            Próxima parada: {selectedBus.nextStop} • {selectedBus.estimatedArrival}
-          </Text>
-        </View>
-      )}
 
       {/* Google Places Search - Buscador con datos reales */}
       <GooglePlacesSearchInteractive
