@@ -9,12 +9,29 @@
 ### 🎯 Objetivo
 Calcular y mostrar ETA (tiempo estimado de llegada) dinámico de buses y visualizar su movimiento en tiempo real. El conductor envía su ubicación cada 5 segundos a Firestore y el usuario ve las actualizaciones instantáneamente mediante listeners en tiempo real (onSnapshot). El cálculo de ETA se realiza vía Cloud Function callable que consume Google Directions API.
 
-### 🔑 Decisiones Clave
+### � Sistema de Roles
+La app tiene **dos roles diferenciados** con interfaces y permisos distintos:
+
+**🚌 Conductor (Driver)**
+- Interfaz simple y minimalista enfocada en el servicio
+- Botón grande para Iniciar/Detener servicio
+- Muestra estado del tracking GPS en tiempo real
+- Envía ubicación automáticamente cada 5s cuando está activo
+- Solo puede actualizar su propia ubicación en Firestore (`/buses/{uid}`)
+
+**🧑 Pasajero (Passenger)**
+- Interfaz completa con mapa, rutas y búsqueda
+- Ve todos los buses activos en tiempo real
+- Puede calcular ETA a cualquier destino
+- Solo lectura de ubicaciones de buses
+
+### �🔑 Decisiones Clave
 - Backend = Firebase (Firestore, Auth, Functions). No se usa servidor Node propio.
 - Tracking = Firestore listeners (pseudo WebSocket).
 - ETA dinámico = Cloud Function `calculateETA` usando Google Directions API.
-- Autenticación = Firebase Auth (Email/Password / más proveedores futuros).
+- Autenticación = Firebase Auth (Email/Password) con AsyncStorage para persistencia.
 - Seguridad = Reglas de Firestore + Callable Functions + separación de claves.
+- Roles = Definidos en `/users/{uid}` con campo `role: 'driver' | 'passenger'`.
 
 ---
 
@@ -838,16 +855,20 @@ const initializeLocation = async () => {
 
 | Feature | Estado |
 |---------|--------|
-| Envío ubicación conductor (Firestore) | ✅ Implementado (servicio) |
+| Envío ubicación conductor (Firestore) | ✅ Implementado |
 | Listener buses en tiempo real | ✅ Implementado |
-| Cloud Function ETA | ✅ Implementada |
+| Cloud Function ETA | ✅ Implementada con tráfico real |
 | Hook ETA dinámico | ✅ Implementado |
-| Polyline dinámica en mapa | ✅ Base lista (requiere wiring final en MapScreen) |
-| Autenticación básica | ⚠️ Inicialización lista (UI login pendiente) |
-| Reglas Firestore | ⚠️ Por definir y aplicar |
+| Polyline dinámica en mapa | ✅ Implementado (carreteras reales) |
+| Autenticación Firebase Auth | ✅ Implementada con AsyncStorage |
+| Sistema de roles (Guest/User/Driver) | ✅ Implementado con autenticación opcional |
+| Login/Registro con roles | ✅ Pantallas completas |
+| Interfaz Driver simplificada | ✅ Implementada |
+| Navegación por roles | ✅ Implementada |
+| Reglas Firestore seguras | ✅ Desplegadas (auth requerida) |
 | Optimización llamadas ETA (cache/debounce) | ✅ Debounce básico |
-| Múltiples buses simultáneos | ⚠️ Escalable (colección) |
-| Roles (driver vs user) | ⚠️ Pendiente en custom claims |
+| Múltiples buses simultáneos | ✅ Escalable (colección) |
+| Modo Demo para testing | ✅ Implementado |
 | Manejo de errores avanzado | ⚠️ Pendiente (reintentos, fallback ETA previa) |
 | Tests unitarios Functions | ⚠️ Pendiente |
 
@@ -1295,6 +1316,11 @@ Antes de comenzar, asegúrate de tener instalado:
 2. **Instalar dependencias:**
    ```bash
    npm install
+   
+   # Instalar dependencias de Cloud Functions
+   cd firebase/functions
+   npm install
+   cd ../..
    ```
 
 3. **Configurar variables de entorno:**
@@ -1302,17 +1328,49 @@ Antes de comenzar, asegúrate de tener instalado:
    # Copiar archivo de configuración
    cp .env.example .env
    
-   # Editar .env con tus configuraciones
-   nano .env  # o usar tu editor preferido
-   
-   # Aplicar configuración automáticamente
-   npm run configure
+   # Editar .env con tus credenciales de Firebase
+   # Obtén las credenciales desde Firebase Console > Project Settings
+   nano .env
    ```
 
-4. **Iniciar el proyecto:**
+4. **Configurar Firebase (primera vez):**
+   ```bash
+   # Login en Firebase CLI
+   firebase login
+   
+   # Seleccionar proyecto
+   firebase use app-busnow
+   
+   # Desplegar reglas de Firestore
+   firebase deploy --only firestore:rules
+   
+   # (Opcional) Desplegar Cloud Functions
+   firebase deploy --only functions
+   ```
+
+5. **Iniciar el proyecto:**
    ```bash
    npm start
+   # o
+   npx expo start
    ```
+
+### **👥 Primer Uso - Crear Cuentas**
+
+**Para probar como Conductor:**
+1. Abre la app → Verás la pantalla de Login
+2. Tap en "¿No tienes cuenta? Regístrate"
+3. Selecciona el rol **🚌 Conductor**
+4. Completa: Nombre, Email, Número de Bus, Contraseña
+5. Tap "Registrarse"
+6. Serás redirigido al **Panel del Conductor**
+7. Tap "▶️ Iniciar Servicio" para comenzar a compartir ubicación
+
+**Para probar como Pasajero:**
+1. Abre la app en otro dispositivo/cuenta
+2. Registra una cuenta con rol **🧑 Pasajero**
+3. Verás el mapa con todos los buses activos
+4. Busca un destino y selecciona un bus para ver el ETA
 
 ### **🔧 Configuración del Entorno de Desarrollo**
 
