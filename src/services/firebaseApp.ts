@@ -16,6 +16,13 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
+// Validar configuración
+console.log('[Firebase] Config:', {
+  apiKey: firebaseConfig.apiKey ? '✓' : '✗',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+});
+
 // Inicializar app solo si no existe
 const app: FirebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 

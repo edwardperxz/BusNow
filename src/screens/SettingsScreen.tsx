@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BusNowColors, getTheme, CommonStyles } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function SettingsScreen({ navigation }: any) {
   const { language, theme, setLanguage, setTheme, t } = useSettings();
+  const { profile, isAnonymous } = useAuth();
   const colors = getTheme(theme === 'dark');
   const isDark = theme === 'dark';
 
@@ -215,6 +217,153 @@ export default function SettingsScreen({ navigation }: any) {
               />
             </View>
           </View>
+
+          {/* Sección de Modo Conductor */}
+          {!isAnonymous && (
+            <View style={{
+              backgroundColor: colors.white,
+              borderRadius: CommonStyles.borderRadius.large,
+              padding: CommonStyles.spacing.lg,
+              marginBottom: CommonStyles.spacing.md,
+              ...CommonStyles.cardShadow,
+            }}>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: '600',
+                color: colors.gray800,
+                marginBottom: CommonStyles.spacing.md,
+              }}>
+                Modo Conductor
+              </Text>
+
+              {profile?.isDriver && profile?.driverStatus === 'active' ? (
+                // Usuario ya es conductor registrado
+                (() => {
+                  const isOnline = profile.driverInfo?.isOnline || false;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('activateDriver')}
+                      style={{
+                        paddingVertical: CommonStyles.spacing.md,
+                        paddingHorizontal: CommonStyles.spacing.md,
+                        backgroundColor: colors.gray100,
+                        borderRadius: CommonStyles.borderRadius.medium,
+                        borderWidth: 2,
+                        borderColor: isOnline ? '#4CAF50' : '#FF9800',
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <View style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: isOnline ? '#4CAF50' : '#FF9800',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: CommonStyles.spacing.md,
+                        }}>
+                          <Text style={{ fontSize: 18, color: '#fff' }}>
+                            {isOnline ? '🟢' : '🔴'}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{
+                            fontSize: 16,
+                            fontWeight: '600',
+                            color: isOnline ? '#4CAF50' : '#FF9800',
+                          }}>
+                            {isOnline ? 'En Servicio' : 'Fuera de Servicio'}
+                          </Text>
+                          <Text style={{
+                            fontSize: 12,
+                            color: colors.gray500,
+                            marginTop: 2,
+                          }}>
+                            {profile.driverInfo?.company} • Bus {profile.driverInfo?.busNumber}
+                          </Text>
+                        </View>
+                        <Text style={{
+                          fontSize: 18,
+                          color: colors.gray400,
+                          fontWeight: '600',
+                        }}>
+                          →
+                        </Text>
+                      </View>
+                      
+                      <View style={{
+                        backgroundColor: isOnline ? '#E8F5E9' : '#FFF3E0',
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                      }}>
+                        <Text style={{ 
+                          color: isOnline ? '#2E7D32' : '#E65100', 
+                          fontWeight: '500', 
+                          fontSize: 12,
+                          textAlign: 'center'
+                        }}>
+                          {isOnline ? 'Toca para desactivar' : 'Toca para activar'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })()
+              ) : (
+                // Usuario no es conductor, mostrar opción para registrarse
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('activateDriver')}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: CommonStyles.spacing.md,
+                    paddingHorizontal: CommonStyles.spacing.md,
+                    backgroundColor: colors.gray100,
+                    borderRadius: CommonStyles.borderRadius.medium,
+                    borderWidth: 2,
+                    borderColor: '#FF5722',
+                  }}
+                >
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: '#FF5722',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: CommonStyles.spacing.md,
+                  }}>
+                    <Text style={{ fontSize: 18, color: '#fff' }}>🚗</Text>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color: colors.gray800,
+                    }}>
+                      Registrarse como Conductor
+                    </Text>
+                    <Text style={{
+                      fontSize: 12,
+                      color: colors.gray500,
+                      marginTop: 2,
+                    }}>
+                      Ingresa tu código de empleado
+                    </Text>
+                  </View>
+
+                  <Text style={{
+                    fontSize: 18,
+                    color: '#FF5722',
+                    fontWeight: '600',
+                  }}>
+                    →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Sección de Notificaciones */}
           <View style={{

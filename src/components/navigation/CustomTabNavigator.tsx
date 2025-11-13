@@ -8,6 +8,7 @@ import DriverScreen from '../../screens/DriverScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import LoginScreen from '../../screens/LoginScreen';
 import RegisterScreen from '../../screens/RegisterScreen';
+import ActivateDriverScreen from '../../screens/ActivateDriverScreen';
 import HamburgerMenu from './HamburgerMenu';
 import HamburgerButton from './HamburgerButton';
 import { BusNowColors, getTheme } from '../../styles/colors';
@@ -52,14 +53,22 @@ const CustomTabNavigator: React.FC = () => {
     } else if (key === 'register') {
       setAuthScreen('register');
       setActiveScreen('auth');
-    } else if (key === 'driver') {
-      // Solo permitir acceso a DriverScreen si es conductor autenticado
-      if (profile?.role === 'driver') {
-        setActiveScreen('driver');
+    } else if (key === 'activateDriver') {
+      // Solo permitir acceder si está autenticado (no anónimo)
+      if (!isAnonymous) {
+        setActiveScreen('activateDriver');
       } else {
-        // Si no es conductor, redirigir a login
+        // Si es anónimo, redirigir a login
         setAuthScreen('login');
         setActiveScreen('auth');
+      }
+    } else if (key === 'driver') {
+      // Solo permitir acceso a DriverScreen si es conductor activo
+      if (profile?.isDriver && profile?.driverStatus === 'active') {
+        setActiveScreen('driver');
+      } else {
+        // Si no es conductor activo, redirigir a activación
+        setActiveScreen('activateDriver');
       }
     } else {
       setActiveScreen(key);
@@ -91,14 +100,25 @@ const CustomTabNavigator: React.FC = () => {
       }} />;
     }
 
-    // Pantalla de conductor (solo si está autenticado como driver)
+    // Pantalla de activación de conductor
+    if (activeScreen === 'activateDriver') {
+      return <ActivateDriverScreen navigation={{ 
+        navigate: (screen: string) => setActiveScreen(screen),
+        goBack: () => setActiveScreen('map')
+      }} />;
+    }
+
+    // Pantalla de conductor (solo si está activo)
     if (activeScreen === 'driver') {
-      if (profile?.role === 'driver') {
+      if (profile?.isDriver && profile?.driverStatus === 'active') {
         return <DriverScreen />;
       } else {
-        // Si no es conductor, redirigir a mapa
-        setActiveScreen('map');
-        return <MapScreen />;
+        // Si no es conductor activo, redirigir a activación
+        setActiveScreen('activateDriver');
+        return <ActivateDriverScreen navigation={{ 
+          navigate: (screen: string) => setActiveScreen(screen),
+          goBack: () => setActiveScreen('map')
+        }} />;
       }
     }
 

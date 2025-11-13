@@ -55,9 +55,31 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
       { key: 'home', label: 'Información', icon: '🏠', color: '#4CAF50' },
     ];
 
-    // Si es conductor autenticado, agregar Panel Conductor
-    if (userProfile?.role === 'driver') {
+    // Si es conductor activo, agregar Panel Conductor
+    if (userProfile?.isDriver && userProfile?.driverStatus === 'active') {
       baseItems.push({ key: 'driver', label: 'Panel Conductor', icon: '👨‍💼', color: '#9C27B0' });
+    }
+
+    // Si está logueado (no anónimo)
+    if (!isAnonymous && userProfile) {
+      if (userProfile.isDriver && userProfile.driverStatus === 'active') {
+        // Si ya es conductor, mostrar control de activación
+        const isOnline = userProfile.driverInfo?.isOnline || false;
+        baseItems.push({ 
+          key: 'activateDriver', 
+          label: isOnline ? 'Desactivar Modo Conductor' : 'Activar Modo Conductor', 
+          icon: isOnline ? '🟢' : '�', 
+          color: isOnline ? '#4CAF50' : '#FF9800' 
+        });
+      } else {
+        // Si no es conductor, mostrar registro
+        baseItems.push({ 
+          key: 'activateDriver', 
+          label: 'Registrarse como Conductor', 
+          icon: '�🚗', 
+          color: '#FF5722' 
+        });
+      }
     }
 
     // Si no está logueado (anónimo), mostrar opción de login
@@ -234,7 +256,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               marginBottom: 12,
             }}>
               <Text style={{ fontSize: 28, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>
-                {userProfile?.role === 'driver' ? '🚌' : isAnonymous ? '👤' : '🧑'}
+                {userProfile?.isDriver && userProfile?.driverStatus === 'active' ? '🚌' : isAnonymous ? '👤' : '🧑'}
               </Text>
             </View>
             
@@ -250,8 +272,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               fontSize: 12,
               color: 'rgba(255, 255, 255, 0.8)',
             }}>
-              {userProfile?.role === 'driver' 
-                ? `Conductor • Bus ${userProfile?.busNumber || ''}`
+              {userProfile?.isDriver && userProfile?.driverStatus === 'active' && userProfile?.driverInfo
+                ? `Conductor • Bus ${userProfile.driverInfo.busNumber}`
                 : isAnonymous 
                   ? 'Modo Invitado'
                   : userProfile?.email || 'Tu compañero de viaje'}

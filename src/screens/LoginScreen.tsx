@@ -32,12 +32,28 @@ export default function LoginScreen({ navigation }: any) {
     setLoading(true);
     try {
       await signIn(email, password);
-      // Volver al mapa después de login exitoso
+      
+      // Navegar al mapa después del login exitoso
       if (navigation?.navigate) {
         navigation.navigate('map');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      // Mejorar mensajes de error
+      let errorMessage = 'Error al iniciar sesión';
+      
+      if (error.message.includes('auth/invalid-credential') || error.message.includes('auth/wrong-password')) {
+        errorMessage = 'Correo o contraseña incorrectos';
+      } else if (error.message.includes('auth/user-not-found')) {
+        errorMessage = 'No existe una cuenta con este correo';
+      } else if (error.message.includes('auth/invalid-email')) {
+        errorMessage = 'El correo electrónico no es válido';
+      } else if (error.message.includes('auth/too-many-requests')) {
+        errorMessage = 'Demasiados intentos. Intenta más tarde';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

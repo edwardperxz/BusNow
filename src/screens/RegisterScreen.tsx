@@ -24,8 +24,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('user');
-  const [busNumber, setBusNumber] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -44,15 +43,24 @@ export default function RegisterScreen({ navigation }: any) {
       return;
     }
 
-    if (role === 'driver' && !busNumber) {
-      Alert.alert('Error', 'Por favor ingresa el número de bus');
-      return;
-    }
-
     setLoading(true);
     try {
-      await signUp(email, password, role, name, role === 'driver' ? busNumber : undefined);
-      Alert.alert('Éxito', 'Cuenta creada correctamente');
+      await signUp(email, password, name, phone || undefined);
+      Alert.alert(
+        '¡Bienvenido a BusNow!', 
+        'Tu cuenta ha sido creada exitosamente.\n\nPuedes solicitar ser conductor desde el menú de configuración.',
+        [
+          {
+            text: 'Entendido',
+            onPress: () => {
+              // Navegar al mapa después del registro exitoso
+              if (navigation?.navigate) {
+                navigation.navigate('map');
+              }
+            }
+          }
+        ]
+      );
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -68,43 +76,8 @@ export default function RegisterScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.title, { color: colors.gray900 }]}>Crear Cuenta</Text>
         <Text style={[styles.subtitle, { color: colors.gray600 }]}>
-          Regístrate para empezar
+          Regístrate para comenzar a usar BusNow
         </Text>
-
-        <Text style={[styles.label, { color: colors.gray700 }]}>Tipo de cuenta</Text>
-        <View style={styles.roleContainer}>
-          <TouchableOpacity
-            style={[
-              styles.roleButton,
-              role === 'user' && { backgroundColor: colors.primary },
-              { borderColor: colors.gray300 }
-            ]}
-            onPress={() => setRole('user')}
-          >
-            <Text style={[
-              styles.roleButtonText,
-              { color: role === 'user' ? colors.white : colors.gray700 }
-            ]}>
-              🧑 Usuario
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.roleButton,
-              role === 'driver' && { backgroundColor: colors.primary },
-              { borderColor: colors.gray300 }
-            ]}
-            onPress={() => setRole('driver')}
-          >
-            <Text style={[
-              styles.roleButtonText,
-              { color: role === 'driver' ? colors.white : colors.gray700 }
-            ]}>
-              🚌 Conductor
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         <TextInput
           style={[styles.input, { 
@@ -134,19 +107,18 @@ export default function RegisterScreen({ navigation }: any) {
           autoComplete="email"
         />
 
-        {role === 'driver' && (
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: colors.gray100,
-              borderColor: colors.gray300,
-              color: colors.gray900
-            }]}
-            placeholder="Número de bus"
-            placeholderTextColor={colors.gray500}
-            value={busNumber}
-            onChangeText={setBusNumber}
-          />
-        )}
+        <TextInput
+          style={[styles.input, { 
+            backgroundColor: colors.gray100,
+            borderColor: colors.gray300,
+            color: colors.gray900
+          }]}
+          placeholder="Teléfono (opcional)"
+          placeholderTextColor={colors.gray500}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
 
         <TextInput
           style={[styles.input, { 
@@ -226,30 +198,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 32,
     textAlign: 'center',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  roleButton: {
-    flex: 1,
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  roleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   input: {
     height: 56,

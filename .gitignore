@@ -37,5 +37,12 @@ yarn-error.*
 # Firebase Functions
 firebase/functions/.runtimeconfig.json
 
+# Firebase Service Account Keys (NEVER COMMIT!)
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Personal credentials
+MY_DRIVER_CODE.md
+
 # typescript
 *.tsbuildinfo

@@ -44,6 +44,81 @@ export interface Driver extends User {
   vehicleId?: string;
 }
 
+// =============================================================================
+// AUTH TYPES - Sistema de Autenticación y Verificación
+// =============================================================================
+
+export type UserRole = 'user' | 'admin' | null;
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  phone?: string;
+  photoURL?: string;
+  
+  // Roles y permisos
+  role: UserRole;
+  isAnonymous?: boolean;
+  
+  // Sistema de conductor
+  isDriver: boolean;              // ¿Tiene permisos de conductor activos?
+  driverStatus: 'none' | 'active' | 'suspended';
+  
+  // Info activa de conductor (solo si está activado)
+  driverInfo?: ActiveDriverInfo;
+  
+  // Metadata
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Información activa del conductor (solo para activados con código)
+export interface ActiveDriverInfo {
+  employeeId: string;              // Código único del empleado
+  company: string;                 // Empresa transportista
+  licenseNumber: string;
+  busNumber: string;
+  route?: string;
+  activatedAt: Date;
+  
+  // Estado actual
+  isOnline: boolean;
+  currentLocation?: {
+    latitude: number;
+    longitude: number;
+    timestamp: Date;
+  };
+  
+  // Estadísticas
+  totalTrips?: number;
+  rating?: number;
+  lastActive?: Date;
+  
+  // Control
+  suspendedUntil?: Date;
+  suspensionReason?: string;
+}
+
+// Código de conductor válido (para validación automática)
+export interface DriverCode {
+  employeeId: string;              // Código único del empleado
+  company: string;                 // Nombre de la empresa
+  licenseNumber: string;           // Licencia esperada
+  busNumber: string;               // Bus asignado
+  route?: string;                  // Ruta asignada (opcional)
+  isActive: boolean;               // Si el código está activo
+  assignedTo?: string;             // UID del usuario que lo usó
+  createdAt: Date;
+}
+
+// Claims personalizados para Firebase Auth
+export interface CustomClaims {
+  isDriver?: boolean;
+  driverStatus?: 'active' | 'suspended';
+  role?: 'admin';
+}
+
 // Empresa operadora
 export interface Operator {
   id: string;
