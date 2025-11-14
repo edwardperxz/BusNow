@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.busnow.app",
       "config": {
-        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS"
+        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para mostrarte paradas cercanas.",
@@ -31,14 +31,16 @@
       "edgeToEdgeEnabled": true,
       "package": "com.busnow.app",
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID"
+          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
         }
       }
     },
@@ -64,8 +66,15 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "8c416071-7ede-4c04-ac94-bda93ae971ca"
       }
+    },
+    "owner": "edwardperxz",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8c416071-7ede-4c04-ac94-bda93ae971ca"
     }
   }
 }

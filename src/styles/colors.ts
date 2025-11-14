@@ -1,125 +1,252 @@
-// 🎨 BusNow Color System - Nueva Paleta de Colores 2024
-// Paleta de colores centralizada para BusNow App
+// 🎨 Paleta de Colores BusNow - Sistema centralizado con soporte para tema oscuro
+export const LightTheme = {
+  // Colores principales
+  primary: '#003D2D',      // Verde oscuro - Color principal de la marca
+  white: '#FFFFFF',        // Blanco puro - Fondos y textos sobre colores oscuros
+  secondary: '#163C78',    // Azul fuerte - Acciones secundarias y navegación
+  secondaryLight: '#B76D68', // Rosa suave - Elementos de apoyo y estados
+  accent: '#E09F3E',       // Naranja - Llamadas a la acción e información importante
+  
+  // Grises para elementos neutros
+  gray100: '#F5F5F5',
+  gray200: '#E5E5E5',
+  gray300: '#D4D4D4',
+  gray400: '#A3A3A3',
+  gray500: '#737373',
+  gray600: '#525252',
+  gray700: '#404040',
+  gray800: '#262626',
+  gray900: '#171717',
 
-export const BusNowColors = {
-  // 🚌 Colores principales de la marca BusNow
-  primary: '#003D2D',        // Verde oscuro principal
-  white: '#FFFFFF',          // Blanco
-  secondaryStrong: '#163C78', // Azul fuerte secundario
-  secondaryWeak: '#B76D68',   // Rosa débil secundario
-  highlight: '#E09F3E',       // Naranja destacable
+  // Estados de buses
+  busActive: '#003D2D',    // Bus en ruta normal
+  busInactive: '#6B7280',  // Bus fuera de servicio
+  busMaintenance: '#E09F3E', // Bus en mantenimiento
+  busDelayed: '#B76D68',   // Bus con retrasos
 
-  // 🎨 Variaciones de fondo
-  background: {
-    primary: '#FFFFFF',       // Fondo principal
-    secondary: '#F8F9FA',     // Fondo secundario claro
-    dark: '#003D2D',          // Fondo oscuro
-  },
+  // Niveles de capacidad
+  capacityLow: '#003D2D',     // Muchos asientos libres
+  capacityMedium: '#E09F3E',  // Capacidad media
+  capacityHigh: '#B76D68',    // Pocos asientos
+  capacityFull: '#163C78',    // Sin espacio disponible
 
-  // 📝 Colores de texto
-  text: {
-    primary: '#003D2D',       // Texto principal (verde oscuro)
-    secondary: '#163C78',     // Texto secundario (azul)
-    light: '#B76D68',         // Texto claro (rosa)
-    white: '#FFFFFF',         // Texto blanco
-    muted: '#6B7280',         // Texto gris apagado
-  },
-
-  // 🚦 Estados de buses usando la paleta
-  busStatus: {
-    active: '#003D2D',        // Verde - bus activo
-    inactive: '#6B7280',      // Gris - bus inactivo
-    maintenance: '#E09F3E',   // Naranja - mantenimiento
-    delayed: '#B76D68',       // Rosa - retrasado
-  },
-
-  // 👥 Niveles de capacidad
-  capacity: {
-    low: '#003D2D',           // Verde - disponible
-    medium: '#E09F3E',        // Naranja - medio lleno
-    high: '#B76D68',          // Rosa - muy lleno
-    full: '#163C78',          // Azul - completo
-  },
-
-  // 🌈 Colores de rutas diferenciadas
-  routes: {
-    line1: '#003D2D',         // Línea 1 - Verde principal
-    line2: '#163C78',         // Línea 2 - Azul fuerte
-    line3: '#E09F3E',         // Línea 3 - Naranja
-    line4: '#B76D68',         // Línea 4 - Rosa
-    line5: '#004D40',         // Línea 5 - Verde más oscuro
-    line6: '#1E3A8A',         // Línea 6 - Azul más oscuro
-  },
-
-  // 🔘 UI Elements
-  border: {
-    light: '#E5E7EB',         // Bordes claros
-    medium: '#D1D5DB',        // Bordes medios
-    dark: '#6B7280',          // Bordes oscuros
-  },
-
-  // 🌙 Sombras
-  shadow: {
-    light: 'rgba(0, 61, 45, 0.1)',    // Sombra clara con primary
-    medium: 'rgba(0, 61, 45, 0.2)',   // Sombra media
-    dark: 'rgba(0, 61, 45, 0.3)',     // Sombra oscura
-  },
-} as const;
-
-// 🎯 Funciones utilitarias para colores dinámicos
-export const getBusStatusColor = (status: 'active' | 'inactive' | 'maintenance' | 'delayed'): string => {
-  return BusNowColors.busStatus[status];
+  // Colores de rutas
+  route1: '#003D2D',       // Verde principal
+  route2: '#163C78',       // Azul fuerte
+  route3: '#E09F3E',       // Naranja
+  route4: '#B76D68',       // Rosa
+  route5: '#004D40',       // Verde más oscuro
+  route6: '#1E3A8A',       // Azul más oscuro
 };
 
-export const getRouteColor = (lineNumber: number): string => {
-  const routeKeys = Object.keys(BusNowColors.routes) as Array<keyof typeof BusNowColors.routes>;
-  const routeIndex = (lineNumber - 1) % routeKeys.length;
-  const routeKey = routeKeys[routeIndex];
-  return BusNowColors.routes[routeKey];
+export const DarkTheme = {
+  // Colores principales adaptados para modo oscuro
+  primary: '#00654A',      // Verde más brillante para mejor contraste
+  white: '#1F1F1F',        // Fondo oscuro principal
+  secondary: '#2E5BBA',    // Azul más brillante
+  secondaryLight: '#D47B76', // Rosa más suave para modo oscuro
+  accent: '#F4B942',       // Naranja más brillante
+  
+  // Grises invertidos para modo oscuro
+  gray100: '#2A2A2A',      // Fondo más oscuro
+  gray200: '#3A3A3A',      // Elementos de fondo
+  gray300: '#4A4A4A',      // Bordes y separadores
+  gray400: '#6A6A6A',      // Texto secundario
+  gray500: '#8A8A8A',      // Texto terciario
+  gray600: '#ABABAB',      // Texto principal
+  gray700: '#CBCBCB',      // Texto destacado
+  gray800: '#E1E1E1',      // Texto muy destacado
+  gray900: '#F1F1F1',      // Texto máximo contraste
+
+  // Estados de buses para modo oscuro
+  busActive: '#00654A',    // Verde brillante
+  busInactive: '#8B9197',  // Gris más claro
+  busMaintenance: '#F4B942', // Naranja brillante
+  busDelayed: '#D47B76',   // Rosa ajustado
+
+  // Niveles de capacidad para modo oscuro
+  capacityLow: '#00654A',     
+  capacityMedium: '#F4B942',  
+  capacityHigh: '#D47B76',    
+  capacityFull: '#2E5BBA',    
+
+  // Colores de rutas para modo oscuro
+  route1: '#00654A',       
+  route2: '#2E5BBA',       
+  route3: '#F4B942',       
+  route4: '#D47B76',       
+  route5: '#006B52',       
+  route6: '#3B82F6',       
+};
+
+// Función para obtener el tema actual
+export const getTheme = (isDark: boolean) => isDark ? DarkTheme : LightTheme;
+
+// Export por defecto (tema claro para compatibilidad)
+export const BusNowColors = LightTheme;
+
+// Funciones utilitarias para obtener colores dinámicos
+export const getBusStatusColor = (status: 'active' | 'inactive' | 'maintenance' | 'delayed'): string => {
+  switch (status) {
+    case 'active': return BusNowColors.busActive;
+    case 'inactive': return BusNowColors.busInactive;
+    case 'maintenance': return BusNowColors.busMaintenance;
+    case 'delayed': return BusNowColors.busDelayed;
+    default: return BusNowColors.busActive;
+  }
+};
+
+export const getRouteColor = (routeNumber: number): string => {
+  const colors = [
+    BusNowColors.route1,
+    BusNowColors.route2,
+    BusNowColors.route3,
+    BusNowColors.route4,
+    BusNowColors.route5,
+    BusNowColors.route6,
+  ];
+  return colors[(routeNumber - 1) % colors.length];
 };
 
 export const getCapacityColor = (level: 'low' | 'medium' | 'high' | 'full'): string => {
-  return BusNowColors.capacity[level];
+  switch (level) {
+    case 'low': return BusNowColors.capacityLow;
+    case 'medium': return BusNowColors.capacityMedium;
+    case 'high': return BusNowColors.capacityHigh;
+    case 'full': return BusNowColors.capacityFull;
+    default: return BusNowColors.capacityLow;
+  }
 };
 
-// 📱 Estilos predefinidos para uso directo
-export const BusNowStyles = {
-  colors: BusNowColors,
+// Estilos comunes minimalistas
+export const CommonStyles = {
+  // Sombras elegantes y sutiles
+  cardShadow: {
+    shadowColor: BusNowColors.gray800,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   
-  // Contenedores comunes
-  containers: {
-    primary: {
-      backgroundColor: BusNowColors.primary,
-      color: BusNowColors.white,
+  softShadow: {
+    shadowColor: BusNowColors.gray600,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  // Bordes minimalistas
+  border: {
+    borderWidth: 1,
+    borderColor: BusNowColors.gray200,
+  },
+  
+  borderRadius: {
+    small: 8,
+    medium: 12,
+    large: 16,
+    extraLarge: 24,
+  },
+
+  // Espaciado consistente y armonioso
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 40,
+  },
+
+  // Tipografía mejorada y legible
+  typography: {
+    h1: { 
+      fontSize: 28, 
+      fontWeight: '700' as const, 
+      color: BusNowColors.gray800,
+      lineHeight: 34 
     },
-    secondary: {
-      backgroundColor: BusNowColors.secondaryStrong,
-      color: BusNowColors.white,
+    h2: { 
+      fontSize: 24, 
+      fontWeight: '600' as const, 
+      color: BusNowColors.gray800,
+      lineHeight: 30 
     },
-    highlight: {
-      backgroundColor: BusNowColors.highlight,
-      color: BusNowColors.white,
+    h3: { 
+      fontSize: 20, 
+      fontWeight: '600' as const, 
+      color: BusNowColors.gray700,
+      lineHeight: 26 
     },
-    card: {
-      backgroundColor: BusNowColors.white,
-      borderColor: BusNowColors.border.light,
-      borderWidth: 1,
+    body: { 
+      fontSize: 16, 
+      fontWeight: '400' as const, 
+      color: BusNowColors.gray700,
+      lineHeight: 22 
+    },
+    bodyMedium: { 
+      fontSize: 16, 
+      fontWeight: '500' as const, 
+      color: BusNowColors.gray700,
+      lineHeight: 22 
+    },
+    caption: { 
+      fontSize: 14, 
+      fontWeight: '400' as const, 
+      color: BusNowColors.gray500,
+      lineHeight: 20 
+    },
+    small: { 
+      fontSize: 12, 
+      fontWeight: '400' as const, 
+      color: BusNowColors.gray500,
+      lineHeight: 16 
     },
   },
 
-  // Textos comunes
-  text: {
-    heading: {
-      color: BusNowColors.text.primary,
-      fontWeight: 'bold' as const,
+  // Componentes reutilizables
+  container: {
+    flex: 1,
+    backgroundColor: BusNowColors.gray100,
+    paddingHorizontal: 16,
+  },
+
+  card: {
+    backgroundColor: BusNowColors.white,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+
+  button: {
+    primary: {
+      backgroundColor: BusNowColors.primary,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
     },
-    body: {
-      color: BusNowColors.text.secondary,
-    },
-    muted: {
-      color: BusNowColors.text.muted,
+    secondary: {
+      backgroundColor: BusNowColors.white,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      borderWidth: 1,
+      borderColor: BusNowColors.gray300,
     },
   },
-} as const;
+
+  // Colores de fondo suaves
+  background: {
+    primary: BusNowColors.gray100,
+    card: BusNowColors.white,
+    accent: '#F8FAFC',
+  },
+};
 
 export default BusNowColors;
