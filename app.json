@@ -20,7 +20,8 @@
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para mostrarte paradas cercanas.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para rastrear buses en tiempo real."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para rastrear buses en tiempo real.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

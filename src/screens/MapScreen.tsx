@@ -7,9 +7,8 @@ import {
   Alert,
   Platform,
   StyleSheet,
-  StatusBar
+  StatusBar,
 } from 'react-native';
-import MapView, { Marker, Region, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -22,9 +21,19 @@ import busTrackingService, { BusLocation } from '../services/firebaseBusTracking
 import { DEMO_MODE } from '../demo/demoConfig';
 import { useDynamicETA } from '../hooks/useDynamicETA';
 
+// Importación dinámica de maps solo en Android/Web
+let MapView: any, Marker: any, Polyline: any, PROVIDER_GOOGLE: any;
+if (Platform.OS !== 'ios') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Polyline = maps.Polyline;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+}
+
 const { width, height } = Dimensions.get('window');
 
-// Coordenadas de David, Chiriquí, Panamá por defecto
+// Coordenadas de David, Chiriquí, Panamá 
 const DAVID_COORDS = {
   latitude: 8.4333,
   longitude: -82.4333,
@@ -36,197 +45,61 @@ const DAVID_COORDS = {
 const darkMapStyle = [
   {
     "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#212121"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
+    "stylers": [{ "color": "#212121" }]
   },
   {
     "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#212121"
-      }
-    ]
+    "stylers": [{ "color": "#757575" }]
   },
   {
     "featureType": "administrative",
     "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.country",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.land_parcel",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.locality",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#bdbdbd"
-      }
-    ]
+    "stylers": [{ "color": "#757575" }]
   },
   {
     "featureType": "poi",
     "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#181818"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#1b1b1b"
-      }
-    ]
+    "stylers": [{ "color": "#757575" }]
   },
   {
     "featureType": "road",
     "elementType": "geometry.fill",
-    "stylers": [
-      {
-        "color": "#2c2c2c"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#8a8a8a"
-      }
-    ]
-  },
-  {
-    "featureType": "road.arterial",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#373737"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#3c3c3c"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway.controlled_access",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#4e4e4e"
-      }
-    ]
-  },
-  {
-    "featureType": "road.local",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "featureType": "transit",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
+    "stylers": [{ "color": "#2c2c2c" }]
   },
   {
     "featureType": "water",
     "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#000000"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#3d3d3d"
-      }
-    ]
+    "stylers": [{ "color": "#17263c" }]
   }
 ];
 
 export default function MapScreen() {
   const { theme } = useSettings();
-  const { searchState, setSearchState } = useSearch();
   const colors = getTheme(theme === 'dark');
+
+  // iOS: Mostrar mensaje de que maps no está disponible
+  if (Platform.OS === 'ios') {
+    return (
+      <View style={[styles.container, styles.iosFallback, { backgroundColor: colors.gray100 }]}>
+        <Text style={[styles.iosTitle, { color: colors.text }]}>
+          📍 Maps no disponible en Expo Go
+        </Text>
+        <Text style={[styles.iosSubtitle, { color: colors.textSecondary }]}>
+          Los mapas requieren una compilación nativa en iOS.
+        </Text>
+        <Text style={[styles.iosDescription, { color: colors.textSecondary }]}>
+          Puedes ver rutas y buses en otras pantallas. Para usar maps, compila con EAS.
+        </Text>
+      </View>
+    );
+  }
+
+  // Android/Web: Component completo
+  const { searchState, setSearchState } = useSearch();
   const isDark = theme === 'dark';
-  const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState<Region>(DAVID_COORDS);
+  const mapRef = useRef<any>(null);
+  
+  const [region, setRegion] = useState(DAVID_COORDS);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
@@ -235,31 +108,22 @@ export default function MapScreen() {
   const [routeDestination, setRouteDestination] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
   const [buses, setBuses] = useState<BusLocation[]>([]);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
+  
   const stopLocation = routeDestination
     ? { latitude: routeDestination.latitude, longitude: routeDestination.longitude }
     : null;
+  
   const { eta, loading: etaLoading, error: etaError } = useDynamicETA({
     busId: selectedBusId || '',
     stopLocation,
     enabled: Boolean(selectedBusId && stopLocation)
   });
   
-  // Google Maps API Key from environment
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
   // Función para manejar la selección de lugares
   const handlePlaceSelect = (place: any) => {
     setSelectedPlace(place);
-    
-    // Animación hacia la ubicación seleccionada
-    if (mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: place.latitude,
-        longitude: place.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }, 1000);
-    }
   };
 
   // Función para manejar cambios de estado del buscador
@@ -269,14 +133,13 @@ export default function MapScreen() {
 
   useEffect(() => {
     initializeLocation();
-    fetchRoute(); // Obtener ruta al inicializar
+    fetchRoute();
   }, []);
 
   // Suscripción a buses activos en Firestore
   useEffect(() => {
     const unsubscribe = busTrackingService.onActiveBuses((list) => {
       setBuses(list);
-      // Si el bus seleccionado desaparece, limpiarlo
       if (selectedBusId && !list.find(b => b.busId === selectedBusId)) {
         setSelectedBusId(null);
       }
@@ -286,10 +149,9 @@ export default function MapScreen() {
     };
   }, [selectedBusId]);
 
-  // Función para obtener ruta entre dos puntos usando Google Directions API
+  // Obtener ruta usando Google Directions API
   const fetchRoute = async () => {
     try {
-      // Usar direcciones de texto para que Google Maps resuelva las ubicaciones exactas
       const origin = encodeURIComponent('Parque Cervantes, David, Chiriquí, Panamá');
       const destination = encodeURIComponent('Romero Doleguita, David, Chiriquí, Panamá');
       
@@ -305,7 +167,6 @@ export default function MapScreen() {
         const decodedCoords = decodePolyline(encodedPolyline);
         setRouteCoordinates(decodedCoords);
         
-        // Guardar las coordenadas reales del origen y destino
         setRouteOrigin({
           latitude: leg.start_location.lat,
           longitude: leg.start_location.lng,
@@ -316,16 +177,6 @@ export default function MapScreen() {
           longitude: leg.end_location.lng,
           address: leg.end_address
         });
-        
-        console.log('Ruta obtenida exitosamente:', {
-          distance: leg.distance.text,
-          duration: leg.duration.text,
-          points: decodedCoords.length,
-          start: leg.start_address,
-          end: leg.end_address
-        });
-      } else {
-        console.error('Error al obtener ruta:', data.status, data.error_message);
       }
     } catch (error) {
       console.error('Error fetching route:', error);
@@ -338,11 +189,8 @@ export default function MapScreen() {
       if (status !== 'granted') {
         Alert.alert(
           'Permisos requeridos', 
-          'Necesitamos acceso a tu ubicación para mostrarte el mapa',
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Configurar', onPress: () => Location.requestForegroundPermissionsAsync() }
-          ]
+          'Necesitamos acceso a tu ubicación',
+          [{ text: 'OK', style: 'cancel' }]
         );
         setIsLoading(false);
         return;
@@ -350,18 +198,14 @@ export default function MapScreen() {
 
       let currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
-
-      // Centrar el mapa en la ubicación actual
-      const newRegion = {
+      setRegion({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
-      };
-      setRegion(newRegion);
+      });
     } catch (error) {
       console.error('Error al obtener ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación. Mostrando David por defecto.');
     } finally {
       setIsLoading(false);
     }
@@ -369,19 +213,18 @@ export default function MapScreen() {
 
   const centerOnUser = () => {
     if (location && mapRef.current) {
-      const newRegion = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-      mapRef.current.animateToRegion(newRegion, 1000);
+      mapRef.current.moveCamera({
+        target: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+        zoom: 16,
+      });
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.gray100 }]}>
-      {/* Mapa - Área central principal */}
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
@@ -397,7 +240,6 @@ export default function MapScreen() {
           mapType="standard"
           customMapStyle={isDark ? darkMapStyle : undefined}
         >
-          {/* Marcadores de buses activos (Firestore) */}
           {buses.map((bus) => (
             <Marker
               key={bus.busId}
@@ -408,17 +250,16 @@ export default function MapScreen() {
               onPress={() => setSelectedBusId(bus.busId)}
             />
           ))}
-          {/* Ruta trazada */}
+
           {routeCoordinates.length > 0 && (
             <>
               <Polyline
                 coordinates={routeCoordinates}
-                strokeColor="#FF0000" // Rojo
+                strokeColor="#FF0000"
                 strokeWidth={4}
                 lineCap="round"
                 lineJoin="round"
               />
-              {/* Polyline de ETA (bus -> destino) si existe */}
               {eta?.polyline && (
                 <Polyline
                   coordinates={decodePolyline(eta.polyline)}
@@ -427,7 +268,6 @@ export default function MapScreen() {
                   lineDashPattern={[6, 6]}
                 />
               )}
-              {/* Fallback demo: línea directa si no hay polyline */}
               {!eta?.polyline && selectedBusId && stopLocation && (() => {
                 const bus = buses.find(b => b.busId === selectedBusId);
                 if (!bus) return null;
@@ -440,7 +280,6 @@ export default function MapScreen() {
                   />
                 );
               })()}
-              {/* Marcador de origen */}
               {routeOrigin && (
                 <Marker
                   coordinate={{ latitude: routeOrigin.latitude, longitude: routeOrigin.longitude }}
@@ -449,7 +288,6 @@ export default function MapScreen() {
                   pinColor="green"
                 />
               )}
-              {/* Marcador de destino */}
               {routeDestination && (
                 <Marker
                   coordinate={{ latitude: routeDestination.latitude, longitude: routeDestination.longitude }}
@@ -460,8 +298,7 @@ export default function MapScreen() {
               )}
             </>
           )}
-          
-          {/* Marcador del lugar seleccionado */}
+
           {selectedPlace && (
             <Marker
               coordinate={{
@@ -470,35 +307,18 @@ export default function MapScreen() {
               }}
               title={selectedPlace.structured_formatting.main_text}
               description={selectedPlace.structured_formatting.secondary_text}
-            >
-              <View style={[styles.selectedPlaceMarker, { backgroundColor: colors.accent }]}>
-                <Text style={styles.selectedPlaceMarkerText}>📍</Text>
-              </View>
-              <Callout>
-                <View style={styles.calloutContainer}>
-                  <Text style={[styles.calloutTitle, { color: colors.gray800 }]}>
-                    {selectedPlace.structured_formatting.main_text}
-                  </Text>
-                  <Text style={[styles.calloutDescription, { color: colors.gray600 }]}>
-                    {selectedPlace.structured_formatting.secondary_text}
-                  </Text>
-                </View>
-              </Callout>
-            </Marker>
+            />
           )}
         </MapView>
 
-        {/* Controles del mapa - Centro derecha */}
         <View style={styles.mapControls}>
-          {/* Badge con cantidad de buses activos */}
-          <View style={[styles.busCountBadge, { backgroundColor: colors.white }]}> 
+          <View style={[styles.busCountBadge, { backgroundColor: colors.white }]}>
             <Text style={[styles.busCountText, { color: colors.gray800 }]}>
               {buses.length} buses activos
             </Text>
           </View>
-          {/* Botones de control */}
+
           <View style={styles.controlButtons}>
-            {/* Botón de ubicación */}
             {location && (
               <TouchableOpacity style={[styles.controlButton, { backgroundColor: colors.white }]} onPress={centerOnUser}>
                 <Text style={styles.controlButtonText}>📍</Text>
@@ -506,17 +326,15 @@ export default function MapScreen() {
             )}
           </View>
 
-          {/* Banner DEMO */}
           {DEMO_MODE && (
-            <View style={[styles.demoBanner, { backgroundColor: colors.accent }]}> 
+            <View style={[styles.demoBanner, { backgroundColor: colors.accent }]}>
               <Text style={{ color: '#fff', fontWeight: '700' }}>MODO DEMO</Text>
             </View>
           )}
         </View>
 
-        {/* Overlay ETA */}
         {selectedBusId && stopLocation && (
-          <View style={[styles.etaCard, { backgroundColor: colors.white }]}> 
+          <View style={[styles.etaCard, { backgroundColor: colors.white }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={[styles.etaTitle, { color: colors.gray900 }]}>ETA</Text>
               <Text style={{ color: colors.gray600 }}>Bus {selectedBusId}</Text>
@@ -528,20 +346,12 @@ export default function MapScreen() {
             ) : eta ? (
               <>
                 <Text style={[styles.etaMain, { color: colors.gray900 }]}>{eta.durationText} · {eta.distanceText}</Text>
-                {!!eta.startAddress && !!eta.endAddress && (
-                  <Text style={{ color: colors.gray600 }} numberOfLines={2}>
-                    {eta.startAddress} → {eta.endAddress}
-                  </Text>
-                )}
               </>
-            ) : (
-              <Text style={{ color: colors.gray700 }}>Selecciona un bus para ver ETA</Text>
-            )}
+            ) : null}
           </View>
         )}
       </View>
 
-      {/* Google Places Search - Buscador con datos reales */}
       <GooglePlacesSearchInteractive
         onPlaceSelect={handlePlaceSelect}
         placeholder="¿A dónde vas?"
@@ -559,252 +369,104 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  iosFallback: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  iosTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  iosSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  iosDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   mapContainer: {
     flex: 1,
+    position: 'relative',
   },
   map: {
     flex: 1,
   },
   mapControls: {
     position: 'absolute',
-    right: CommonStyles.spacing.md,
-    top: '45%',
-    alignItems: 'center',
-    zIndex: 100,
+    right: 16,
+    top: 16,
+    bottom: 16,
+    pointerEvents: 'box-none',
   },
   busCountBadge: {
-    borderRadius: CommonStyles.borderRadius.medium,
-    paddingHorizontal: CommonStyles.spacing.md,
-    paddingVertical: CommonStyles.spacing.sm,
-    marginBottom: CommonStyles.spacing.sm,
-    ...CommonStyles.cardShadow,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   busCountText: {
-    ...CommonStyles.typography.small,
+    fontSize: 14,
     fontWeight: '600',
   },
   controlButtons: {
-    alignItems: 'center',
+    gap: 12,
   },
   controlButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
-    ...CommonStyles.cardShadow,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 5,
   },
   controlButtonText: {
     fontSize: 20,
   },
-  etaCard: {
-    position: 'absolute',
-    left: CommonStyles.spacing.md,
-    right: CommonStyles.spacing.md,
-    bottom: 120,
-    borderRadius: CommonStyles.borderRadius.medium,
-    padding: CommonStyles.spacing.md,
-    ...CommonStyles.cardShadow,
-    zIndex: 200,
-  },
   demoBanner: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24) + 10,
-    right: CommonStyles.spacing.md,
-    borderRadius: CommonStyles.borderRadius.small,
-    paddingHorizontal: CommonStyles.spacing.md,
-    paddingVertical: 6,
-    ...CommonStyles.cardShadow,
-    zIndex: 999,
+    left: -60,
+    top: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  etaCard: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 5,
   },
   etaTitle: {
-    ...CommonStyles.typography.bodyMedium,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: '700',
   },
   etaMain: {
-    ...CommonStyles.typography.body,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  busMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-  },
-  busMarkerText: {
-    fontSize: 16,
-  },
-  statusIndicator: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-  },
-  stopMarker: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  stopMarkerText: {
-    fontSize: 12,
-  },
-  calloutContainer: {
-    padding: CommonStyles.spacing.sm,
-    borderRadius: CommonStyles.borderRadius.small,
-    minWidth: 150,
-    ...CommonStyles.cardShadow,
-  },
-  calloutTitle: {
-    ...CommonStyles.typography.bodyMedium,
-    marginBottom: 4,
-  },
-  calloutText: {
-    ...CommonStyles.typography.small,
-  },
-  busInfo: {
-    position: 'absolute',
-    bottom: 120,
-    left: CommonStyles.spacing.md,
-    right: CommonStyles.spacing.md,
-    borderRadius: CommonStyles.borderRadius.medium,
-    padding: CommonStyles.spacing.md,
-    ...CommonStyles.cardShadow,
-    zIndex: 200,
-  },
-  busInfoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: CommonStyles.spacing.sm,
-  },
-  busInfoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: CommonStyles.spacing.sm,
-  },
-  busInfoIconText: {
-    fontSize: 12,
-  },
-  busInfoDetails: {
-    flex: 1,
-  },
-  busInfoTitle: {
-    ...CommonStyles.typography.bodyMedium,
-  },
-  busInfoDirection: {
-    ...CommonStyles.typography.small,
-  },
-  closeButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-  },
-  busInfoNextStop: {
-    ...CommonStyles.typography.caption,
-  },
-  searchContainer: {
-    position: 'absolute',
-    bottom: CommonStyles.spacing.md,
-    left: CommonStyles.spacing.md,
-    right: CommonStyles.spacing.md,
-    borderRadius: CommonStyles.borderRadius.medium,
-    ...CommonStyles.cardShadow,
-    zIndex: 300,
-  },
-  searchInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: CommonStyles.spacing.md,
-  },
-  searchIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: CommonStyles.spacing.md,
-  },
-  textInput: {
-    flex: 1,
-    ...CommonStyles.typography.body,
-  },
-  searchResults: {
-    borderTopWidth: 1,
-    maxHeight: 200,
-  },
-  searchResult: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: CommonStyles.spacing.md,
-    borderBottomWidth: 1,
-  },
-  searchResultIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: CommonStyles.spacing.md,
-  },
-  searchResultInfo: {
-    flex: 1,
-  },
-  searchResultTitle: {
-    ...CommonStyles.typography.bodyMedium,
-  },
-  searchResultSubtitle: {
-    ...CommonStyles.typography.small,
-  },
-  noResults: {
-    padding: CommonStyles.spacing.lg,
-    alignItems: 'center',
-  },
-  noResultsText: {
-    ...CommonStyles.typography.caption,
-  },
-  selectedPlaceMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  selectedPlaceMarkerText: {
-    fontSize: 20,
-  },
-  calloutDescription: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  menuButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24) + 10,
-    left: CommonStyles.spacing.md,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
-    ...CommonStyles.cardShadow,
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 8,
   },
 });
