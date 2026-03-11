@@ -7,10 +7,13 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
+import { httpsCallable } from 'firebase/functions';
 import { BusNowColors, CommonStyles, getTheme } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 import RouteMapVisualization from '../components/RouteMapVisualization';
+import { fn } from '../services/firebaseApp';
 
 interface RouteStop {
   id: string;
@@ -23,59 +26,68 @@ interface RouteStop {
   isActive?: boolean;
 }
 
+type RouteData = {
+  id: string;
+  name: string;
+  startPoint: string;
+  endPoint: string;
+  stops: RouteStop[];
+};
+
 interface RouteDetailScreenProps {
-  route?: {
-    id: string;
-    name: string;
-    startPoint: string;
-    endPoint: string;
-    stops: RouteStop[];
-  };
+  route?: RouteData;
+  /** ID de ruta para cargar desde el backend. Si se provee, sobreescribe `route`. */
+  routeId?: string;
   onBack?: () => void;
 }
 
+const DEFAULT_ROUTE: RouteData = {
+  id: 'ruta-001',
+  name: 'Ruta Boquete - David',
+  startPoint: 'Boquete',
+  endPoint: 'David',
+  stops: [
+    {
+      id: '1',
+      name: 'Parada Municipalidad',
+      time: '7:00 AM',
+      coordinates: { latitude: 8.7833, longitude: -82.4333 },
+      isActive: true
+    },
+    {
+      id: '2',
+      name: 'Parada Municipalidad',
+      time: '7:15 AM',
+      coordinates: { latitude: 8.7800, longitude: -82.4300 }
+    },
+    {
+      id: '3',
+      name: 'Parada Parque Central',
+      time: '7:15 AM',
+      coordinates: { latitude: 8.7750, longitude: -82.4250 }
+    },
+    {
+      id: '4',
+      name: 'Parada Parque Central',
+      time: '8:45 AM',
+      coordinates: { latitude: 8.7700, longitude: -82.4200 }
+    },
+    {
+      id: '5',
+      name: 'Siocial Stopo',
+      time: '8:30 AM',
+      coordinates: { latitude: 8.7650, longitude: -82.4150 }
+    }
+  ]
+};
+
 const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
-  route = {
-    id: 'ruta-001',
-    name: 'Ruta Boquete - David',
-    startPoint: 'Boquete',
-    endPoint: 'David',
-    stops: [
-      {
-        id: '1',
-        name: 'Parada Municipalidad',
-        time: '7:00 AM',
-        coordinates: { latitude: 8.7833, longitude: -82.4333 },
-        isActive: true
-      },
-      {
-        id: '2',
-        name: 'Parada Municipalidad',
-        time: '7:15 AM',
-        coordinates: { latitude: 8.7800, longitude: -82.4300 }
-      },
-      {
-        id: '3',
-        name: 'Parada Parque Central',
-        time: '7:15 AM',
-        coordinates: { latitude: 8.7750, longitude: -82.4250 }
-      },
-      {
-        id: '4',
-        name: 'Parada Parque Central',
-        time: '8:45 AM',
-        coordinates: { latitude: 8.7700, longitude: -82.4200 }
-      },
-      {
-        id: '5',
-        name: 'Siocial Stopo',
-        time: '8:30 AM',
-        coordinates: { latitude: 8.7650, longitude: -82.4150 }
-      }
-    ]
-  },
+  route: routeProp = DEFAULT_ROUTE,
+  routeId,
   onBack,
 }) => {
+  const [route, setRoute] = useState<RouteData>(routeProp);
+  const [loadingRoute, setLoadingRoute] = useState(!!routeId);
   const [selectedStop, setSelectedStop] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, t } = useSettings();
@@ -85,6 +97,19 @@ const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!routeId) return;
+    const getRouteDetailFn = httpsCallable<{ routeId: string }, { ok: boolean; route: RouteData }>(
+      fn,
+      'getRouteDetail'
+    );
+    setLoadingRoute(true);
+    getRouteDetailFn({ routeId })
+      .then(res => { if (res.data?.route) setRoute(res.data.route); })
+      .catch(err => console.error('[RouteDetail] Error al cargar ruta:', err))
+      .finally(() => setLoadingRoute(false));
+  }, [routeId]);
 
   const getTimeStatus = (stopTime: string) => {
     const now = currentTime;
@@ -128,7 +153,10 @@ const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
         </View>
       </View>
 
-      {/* Map Container */}
+      {loadingRoute ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, alignSelf: 'center' }} />
+      ) : (
+        <>
       <View style={styles.mapContainer}>
         <RouteMapVisualization 
           stops={route.stops}
@@ -228,9 +256,11 @@ const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
           <Text style={[styles.favoriteButtonText, { color: colors.gray700 }]}>⭐ Agregar a favoritos</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.trackButton, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.trackButtonText, { color: colors.white }]}>� Seguir bus</Text>
+          <Text style={[styles.trackButtonText, { color: colors.white }]}>🚌 Seguir bus</Text>
         </TouchableOpacity>
       </View>
+        </>
+      )}
     </SafeAreaView>
   );
 };

@@ -28,6 +28,13 @@ declare global {
 }
 
 // Configuración de Google Maps
+// NOTA DE SEGURIDAD: La Maps JS API en web requiere que la clave se inyecte en el HTML como script tag,
+// por lo que no puede ocultarse completamente en el bundle del cliente. Mitigation aplicada:
+//   1. Restringir la clave en Google Cloud Console → "Restricciones de aplicación → HTTP refs"
+//      Agregar los dominios permitidos (ej. https://busnow.app/*) para que la clave solo
+//      funcione en esos orígenes y sea inútil si alguien la extrae del código.
+//   2. Restringir las APIs habilitadas → solo "Maps JavaScript API".
+//   3. Monitorear cuotas y alertas de uso inesperado en Google Cloud Console.
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 interface Bus {

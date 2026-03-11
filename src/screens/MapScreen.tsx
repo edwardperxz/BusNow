@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { httpsCallable } from 'firebase/functions';
 
 import { getTheme, CommonStyles } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
@@ -20,6 +21,7 @@ import { decodePolyline } from '../utils/polyline';
 import busTrackingService, { BusLocation } from '../services/firebaseBusTracking';
 import { DEMO_MODE } from '../demo/demoConfig';
 import { useDynamicETA } from '../hooks/useDynamicETA';
+import { fn } from '../services/firebaseApp';
 
 // Importación dinámica de maps solo en Android/Web
 let MapView: any, Marker: any, Polyline: any, PROVIDER_GOOGLE: any;
@@ -119,7 +121,7 @@ export default function MapScreen() {
     enabled: Boolean(selectedBusId && stopLocation)
   });
   
-  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const getRouteDirectionsFn = httpsCallable(fn, 'getRouteDirections');
 
   // Función para manejar la selección de lugares
   const handlePlaceSelect = (place: any) => {
@@ -149,37 +151,32 @@ export default function MapScreen() {
     };
   }, [selectedBusId]);
 
-  // Obtener ruta usando Google Directions API
+  // Obtener ruta desde backend (Cloud Function), evitando llamadas directas a Google en cliente
   const fetchRoute = async () => {
     try {
-      const origin = encodeURIComponent('Parque Cervantes, David, Chiriquí, Panamá');
-      const destination = encodeURIComponent('Romero Doleguita, David, Chiriquí, Panamá');
-      
-      const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${googleMapsApiKey}&mode=driving&language=es`;
-      
-      const response = await fetch(directionsUrl);
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.routes.length > 0) {
-        const route = data.routes[0];
-        const leg = route.legs[0];
-        const encodedPolyline = route.overview_polyline.points;
-        const decodedCoords = decodePolyline(encodedPolyline);
+      const response = await getRouteDirectionsFn({
+        origin: 'Parque Cervantes, David, Chiriquí, Panamá',
+        destination: 'Romero Doleguita, David, Chiriquí, Panamá',
+      });
+
+      const data = response.data as {
+        ok?: boolean;
+        route?: {
+          polyline: string;
+          origin: { latitude: number; longitude: number; address: string };
+          destination: { latitude: number; longitude: number; address: string };
+        };
+      };
+
+      if (data?.ok && data.route?.polyline) {
+        const decodedCoords = decodePolyline(data.route.polyline);
         setRouteCoordinates(decodedCoords);
-        
-        setRouteOrigin({
-          latitude: leg.start_location.lat,
-          longitude: leg.start_location.lng,
-          address: leg.start_address
-        });
-        setRouteDestination({
-          latitude: leg.end_location.lat,
-          longitude: leg.end_location.lng,
-          address: leg.end_address
-        });
+
+        setRouteOrigin(data.route.origin);
+        setRouteDestination(data.route.destination);
       }
     } catch (error) {
-      console.error('Error fetching route:', error);
+      console.error('Error fetching route from backend:', error);
     }
   };
 
@@ -355,7 +352,6 @@ export default function MapScreen() {
       <GooglePlacesSearchInteractive
         onPlaceSelect={handlePlaceSelect}
         placeholder="¿A dónde vas?"
-        apiKey={googleMapsApiKey}
         countryCode="PA"
         location={`${DAVID_COORDS.latitude},${DAVID_COORDS.longitude}`}
         radius={50000}

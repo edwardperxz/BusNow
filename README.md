@@ -79,7 +79,7 @@ BusNow/
 6. Recalculo automático cada vez que el documento del bus cambia (nuevo snapshot) con un debounce mínimo para evitar spam.
 
 ### 2️⃣ Cloud Function `calculateETA`
-Archivo: `firebase/functions/index.js`
+Archivo: `functions/src/index.ts`
 
 Responsable de:
 - Recibir coordenadas de bus y parada
@@ -1016,7 +1016,7 @@ if (__DEV__) {
 
 ```bash
 # Navegar a carpeta de functions
-cd firebase/functions
+cd functions
 
 # Instalar dependencias
 npm install
@@ -1074,7 +1074,7 @@ firebase functions:config:set \
 firebase functions:config:unset maps.key
 
 # Exportar a archivo local para emuladores (solo local, no versionar)
-firebase functions:config:get > firebase/functions/.runtimeconfig.json
+firebase functions:config:get > functions/.runtimeconfig.json
 ```
 
 **En App Cliente** (públicas, vía Expo):
@@ -1117,7 +1117,7 @@ firebase login --reauth
 
 **Error: "Cannot find module"**
 ```bash
-cd firebase/functions
+cd functions
 rm -rf node_modules package-lock.json
 npm install
 ```
@@ -1195,7 +1195,7 @@ npm run submit:ios      # App Store
 
 ## 📞 INFORMACIÓN DE CONTACTO Y SOPORTE
 
-**Desarrollador**: Zeteki  
+**Desarrollador**: Ocassu Technologies  
 **Repositorio**: [github.com/edwardperxz/BusNow](https://github.com/edwardperxz/BusNow)  
 **Versión actual**: 1.0.0  
 **Última actualización**: Noviembre 2025
@@ -1319,9 +1319,9 @@ Antes de comenzar, asegúrate de tener instalado:
    npm install
    
    # Instalar dependencias de Cloud Functions
-   cd firebase/functions
+  cd functions
    npm install
-   cd ../..
+  cd ..
    ```
 
 3. **Configurar variables de entorno:**

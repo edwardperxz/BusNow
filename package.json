@@ -20,7 +20,12 @@
     "build:status": "eas build:list",
     "configure": "node scripts/configure-app.js",
     "preeas": "npm run configure",
-    "security:scan": "bash scripts/security-scan.sh"
+    "security:scan": "bash scripts/security-scan.sh",
+    "backend:build": "npm --prefix functions run build",
+    "backend:serve": "npm --prefix functions run serve",
+    "backend:deploy": "npm --prefix functions run deploy",
+    "backend:test": "npm --prefix functions run test",
+    "backend:test:coverage": "npm --prefix functions run test:coverage"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.1",

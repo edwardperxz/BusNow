@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { httpsCallable } from 'firebase/functions';
 import { BusNowColors, CommonStyles, getRouteColor, getTheme } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 import RouteDetailScreen from './RouteDetailScreen';
+import { fn } from '../services/firebaseApp';
 
 interface Route {
   id: string;
@@ -19,41 +21,18 @@ interface Route {
 export default function RoutesScreen() {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [showRouteDetail, setShowRouteDetail] = useState(false);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [loading, setLoading] = useState(true);
   const { theme, t } = useSettings();
   const colors = getTheme(theme === 'dark');
-  
-  const routes: Route[] = [
-    {
-      id: '1',
-      name: 'Ruta Centro',
-      origin: 'Plaza Mayor',
-      destination: 'Universidad',
-      frequency: '5-8 min',
-      fare: 'Q2.50',
-      status: 'active',
-      activeBuses: 2
-    },
-    {
-      id: '2',
-      name: 'Ruta Norte',
-      origin: 'Terminal Norte',
-      destination: 'Centro Comercial',
-      frequency: '10-15 min',
-      fare: 'Q3.00',
-      status: 'active',
-      activeBuses: 2
-    },
-    {
-      id: '3',
-      name: 'Ruta Sur',
-      origin: 'Aeropuerto',
-      destination: 'Zona Industrial',
-      frequency: '15-20 min',
-      fare: 'Q4.00',
-      status: 'limited',
-      activeBuses: 1
-    },
-  ];
+
+  useEffect(() => {
+    const getRoutesFn = httpsCallable<void, { ok: boolean; routes: Route[] }>(fn, 'getRoutes');
+    getRoutesFn()
+      .then(res => setRoutes(res.data.routes ?? []))
+      .catch(err => console.error('[Routes] Error al cargar rutas:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleRoutePress = (routeId: string) => {
     setSelectedRoute(routeId);
@@ -68,7 +47,8 @@ export default function RoutesScreen() {
   // Si se está mostrando el detalle, renderizar la pantalla correspondiente
   if (showRouteDetail) {
     return (
-      <RouteDetailScreen 
+      <RouteDetailScreen
+        routeId={selectedRoute ?? undefined}
         onBack={handleBackFromDetail}
       />
     );
@@ -147,7 +127,10 @@ export default function RoutesScreen() {
 
         {/* Botón para ver mockup de alta fidelidad */}
         <TouchableOpacity
-          onPress={() => setShowRouteDetail(true)}
+          onPress={() => {
+            setSelectedRoute(routes[0]?.id ?? null);
+            setShowRouteDetail(true);
+          }}
           style={{
             backgroundColor: colors.primary,
             padding: CommonStyles.spacing.md,
@@ -176,6 +159,14 @@ export default function RoutesScreen() {
             marginBottom: CommonStyles.spacing.md,
             color: colors.gray700
           }}>Rutas disponibles</Text>
+
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
+          ) : routes.length === 0 ? (
+            <Text style={{ color: colors.gray500, textAlign: 'center', marginTop: 32 }}>
+              No hay rutas disponibles en este momento
+            </Text>
+          ) : null}
 
           {routes.map((route, index) => (
             <TouchableOpacity

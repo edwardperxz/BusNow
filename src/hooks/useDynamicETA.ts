@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebaseApp';
+import { httpsCallable } from 'firebase/functions';
+import { db, fn } from '../services/firebaseApp';
 
 interface LocationCoord {
   latitude: number;
@@ -29,6 +30,7 @@ export function useDynamicETA({ busId, stopLocation, enabled = true }: Params) {
   const [error, setError] = useState<string | null>(null);
   const lastRequest = useRef<number>(0);
   const intervalMs = Number(process.env.EXPO_PUBLIC_LOCATION_UPDATE_INTERVAL || 5000);
+  const calculateETAFn = httpsCallable(fn, 'calculateETA');
 
   const calculate = useCallback(async (busLoc: LocationCoord) => {
     if (!stopLocation) return;
@@ -40,40 +42,25 @@ export function useDynamicETA({ busId, stopLocation, enabled = true }: Params) {
     try {
       setLoading(true);
       setError(null);
-      
-      // Llamar directamente a Google Directions API desde el cliente
-      // (tanto en demo como en producción, sin necesidad de Cloud Function)
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        throw new Error('Falta EXPO_PUBLIC_GOOGLE_MAPS_API_KEY');
+
+      const response = await calculateETAFn({
+        busLocation: busLoc,
+        stopLocation,
+      });
+
+      const data = response.data as { ok?: boolean; eta?: ETAData };
+      if (!data?.ok || !data.eta) {
+        throw new Error('Respuesta inválida del backend para ETA');
       }
-      
-      const origin = `${busLoc.latitude},${busLoc.longitude}`;
-      const destination = `${stopLocation.latitude},${stopLocation.longitude}`;
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving&departure_time=now&traffic_model=best_guess&language=es&region=pa&key=${apiKey}`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.status !== 'OK') {
-        throw new Error(`Google Directions error: ${data.status}`);
-      }
-      
-      const route = data.routes?.[0];
-      const leg = route?.legs?.[0];
-      
-      if (!route || !leg) {
-        throw new Error('No se encontró ruta');
-      }
-      
+
       setEta({
-        durationSeconds: leg?.duration_in_traffic?.value || leg?.duration?.value || 0,
-        durationText: leg?.duration_in_traffic?.text || leg?.duration?.text || '',
-        distanceMeters: leg?.distance?.value || 0,
-        distanceText: leg?.distance?.text || '',
-        polyline: route?.overview_polyline?.points || '',
-        startAddress: leg?.start_address || 'Posición del bus',
-        endAddress: leg?.end_address || 'Destino'
+        durationSeconds: data.eta.durationSeconds,
+        durationText: data.eta.durationText,
+        distanceMeters: data.eta.distanceMeters,
+        distanceText: data.eta.distanceText,
+        polyline: data.eta.polyline,
+        startAddress: data.eta.startAddress || 'Posición del bus',
+        endAddress: data.eta.endAddress || 'Destino'
       });
     } catch (e: any) {
       setError(e?.message || 'Error calculando ETA');
@@ -81,7 +68,7 @@ export function useDynamicETA({ busId, stopLocation, enabled = true }: Params) {
     } finally {
       setLoading(false);
     }
-  }, [stopLocation]);
+  }, [stopLocation, calculateETAFn]);
 
   useEffect(() => {
     if (!enabled || !busId || !stopLocation) return;

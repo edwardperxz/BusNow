@@ -18,8 +18,6 @@ const app: FirebaseApp = getApps().length ? getApps()[0] : initializeApp(firebas
 
 // Inicializar Auth
 const auth: Auth = getAuth(app);
-console.log('[Firebase] Auth inicializado');
-
 const db = getFirestore(app);
 const fn = getFunctions(app);
 

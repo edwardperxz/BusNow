@@ -2,6 +2,7 @@
 
 # 🚀 BusNow Deployment Scripts
 # Scripts para facilitar el deployment de BusNow en EAS
+# Backend Cloud Functions está separado en ./functions
 
 echo "🚌 BusNow - EAS Deployment Helper"
 echo "================================="

@@ -1,5 +1,6 @@
 import { doc, setDoc, onSnapshot, serverTimestamp, collection, query } from 'firebase/firestore';
-import { db } from './firebaseApp';
+import { httpsCallable } from 'firebase/functions';
+import { db, fn } from './firebaseApp';
 import { DEMO_MODE, DEMO_BUS_ID, DEMO_PATH, DEMO_UPDATE_INTERVAL_MS, DEMO_SPEED_KMH } from '../demo/demoConfig';
 
 export interface BusLocation {
@@ -13,24 +14,31 @@ export interface BusLocation {
 
 class FirebaseBusTrackingService {
   private unsubscribes: Array<() => void> = [];
+  private updateDriverLocationFn = httpsCallable(fn, 'updateDriverLocation');
 
   async sendDriverLocation(busId: string, latitude: number, longitude: number, heading?: number, speed?: number) {
-    const ref = doc(db, 'buses', busId);
-    await setDoc(ref, {
-      busId,
-      latitude,
-      longitude,
-      heading: heading || null,
-      speed: speed || null,
-      updatedAt: Date.now(),
-      updatedAtTimestamp: serverTimestamp()
-    }, { merge: true });
+    if (DEMO_MODE) {
+      // En modo demo no hay sesión de conductor autenticada; escribir directamente en Firestore.
+      const ref = doc(db, 'buses', busId);
+      await setDoc(ref, {
+        busId,
+        latitude,
+        longitude,
+        heading: heading ?? null,
+        speed: speed ?? null,
+        updatedAt: Date.now(),
+        updatedAtTimestamp: serverTimestamp()
+      }, { merge: true });
+      return;
+    }
+
+    // Producción: actualización de posición vía Cloud Function (Admin SDK).
+    // firestore.rules bloquea writes directos desde el cliente.
+    await this.updateDriverLocationFn({ busId, latitude, longitude, heading, speed });
   }
 
   onActiveBuses(callback: (buses: BusLocation[]) => void) {
-    console.log('[BusTracking] DEMO_MODE:', DEMO_MODE, 'DEMO_PATH length:', DEMO_PATH.length);
     if (DEMO_MODE) {
-      console.log('[DEMO] Iniciando simulación de bus demo');
       // Simulación local: escribe en Firestore cada intervalo Y escucha cambios para sincronizar UI
       let idx = 0;
       const speed = DEMO_SPEED_KMH;
@@ -50,19 +58,16 @@ class FirebaseBusTrackingService {
             updatedAt: data.updatedAt
           });
         });
-        console.log(`[DEMO] Listener recibió ${list.length} buses:`, list.map(b => ({ id: b.busId, lat: b.latitude, lon: b.longitude })));
         callback(list);
       });
       
       // Escritor periódico que actualiza la posición del bus demo
       const tick = async () => {
         const p = DEMO_PATH[idx % DEMO_PATH.length];
-        console.log(`[DEMO] Escribiendo bus en posición ${idx % DEMO_PATH.length}:`, p);
         try {
           await this.sendDriverLocation(DEMO_BUS_ID, p.latitude, p.longitude, 90, speed);
-          console.log(`[DEMO] Bus ${DEMO_BUS_ID} actualizado en Firestore`);
         } catch (e) {
-          console.error('[DEMO] Error escribiendo en Firestore:', e);
+          console.error('[DEMO] Error actualizando posición:', e);
         }
         idx += 1;
       };

@@ -2,10 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Buses: lectura pública para pasajeros, escritura solo para conductores autenticados
+    // Buses: lectura pública para pasajeros.
+    // ESCRITURA BLOQUEADA para el cliente — todas las actualizaciones de posición
+    // deben pasar por el callable `updateDriverLocation` (Cloud Function con Admin SDK).
     match /buses/{busId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == busId; // Solo el conductor puede actualizar su propio bus
+      allow write: if false;
     }
 
     // Perfiles de usuarios
@@ -13,6 +15,18 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null; // Permitir crear perfil al registrarse
+    }
+
+    // Cache de ETA — solo lectura para el cliente (escrituras vía Admin SDK en backend)
+    match /eta_cache/{cacheId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Rate limits — solo lectura para el cliente (escrituras vía Admin SDK en backend)
+    match /rate_limits/{limitId} {
+      allow read: if false;
+      allow write: if false;
     }
 
     // Por defecto, denegar
