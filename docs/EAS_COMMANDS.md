@@ -132,7 +132,7 @@ eas env:list --environment preview
 npm run deploy
 
 # O directamente
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 ---

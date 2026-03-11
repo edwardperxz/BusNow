@@ -478,7 +478,7 @@ EXPO_PUBLIC_LOCATION_UPDATE_INTERVAL=5000
 FIREBASE_ADMIN_SDK_KEY= (no se expone en cliente, solo CI/CD o funciones)
 ```
 
-Cloud Functions usa `process.env.GOOGLE_MAPS_API_KEY` o fallback a la pública (recomendado configurar variable segura en panel Firebase Functions para no depender de la pública).
+Cloud Functions debe usar solo `process.env.GOOGLE_MAPS_API_KEY` o `functions.config().maps.key` (sin fallback a variables `EXPO_PUBLIC_*`).
 
 #### **Decodificador de Polyline** (`utils/polyline.ts`)
 ```typescript
@@ -684,7 +684,7 @@ npm run configure         # Ejecuta script de configuración
 npm run preeas            # Pre-hook antes de builds EAS
 
 # Deploy
-npm run deploy            # Script interactivo de deployment (./deploy.sh)
+npm run deploy            # Script interactivo de deployment (./scripts/deploy.sh)
 ```
 
 ---
@@ -1035,7 +1035,8 @@ firebase deploy --only functions:calculateETA
 ```
 
 **Nota importante sobre API Keys**:
-- La Cloud Function usa: `functions.config().maps.key` → `process.env.GOOGLE_MAPS_API_KEY` → `process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`
+- La Cloud Function usa solo: `functions.config().maps.key` o `process.env.GOOGLE_MAPS_API_KEY`
+- No se debe usar fallback a `EXPO_PUBLIC_*` en backend
 - **Recomendado**: Configurar `maps.key` con clave privada para evitar límites de cuota
 
 #### **2. Deploy Reglas de Firestore**
@@ -1066,14 +1067,14 @@ firebase deploy -m "Agregar calculateETA con tráfico real"
 ```bash
 # Configurar múltiples variables
 firebase functions:config:set \
-  maps.key="AIzaSy..." \
+  maps.key="$GOOGLE_MAPS_API_KEY" \
   app.env="production"
 
 # Eliminar variable
 firebase functions:config:unset maps.key
 
-# Exportar a archivo local para emuladores
-firebase functions:config:get > .runtimeconfig.json
+# Exportar a archivo local para emuladores (solo local, no versionar)
+firebase functions:config:get > firebase/functions/.runtimeconfig.json
 ```
 
 **En App Cliente** (públicas, vía Expo):
@@ -1843,7 +1844,7 @@ npm run web  # ← ¡Más rápido para empezar!
 
 **🌐 Web:** http://localhost:8081  
 **📱 Mobile:** Escanea QR con Expo Go  
-**🎨 Colores:** Ver `PALETA_COLORES.md`
+**🎨 Colores:** Ver `docs/DESIGN.md`
 
 ---
 

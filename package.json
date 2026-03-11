@@ -12,14 +12,15 @@
     "build:preview": "eas build --platform all --profile preview",
     "build:dev": "eas build --platform all --profile development",
     "preview": "expo start --tunnel",
-    "deploy": "./deploy.sh",
+    "deploy": "./scripts/deploy.sh",
     "update:preview": "eas update --branch preview",
     "update:prod": "eas update --branch production",
     "submit:android": "eas submit --platform android",
     "submit:ios": "eas submit --platform ios",
     "build:status": "eas build:list",
-    "configure": "node configure-app.js",
-    "preeas": "npm run configure"
+    "configure": "node scripts/configure-app.js",
+    "preeas": "npm run configure",
+    "security:scan": "bash scripts/security-scan.sh"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.1",

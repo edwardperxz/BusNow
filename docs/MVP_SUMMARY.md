@@ -177,9 +177,8 @@ npx tsc --noEmit
 ## 🔐 Credenciales de Prueba
 
 ### Para Conductores:
-- **ID**: driver001, **Password**: 1234, **Bus**: BUS-001
-- **ID**: driver002, **Password**: 5678, **Bus**: BUS-002  
-- **ID**: driver003, **Password**: 9999, **Bus**: BUS-003
+- No se publican credenciales en el repositorio.
+- Configura usuarios de prueba en Firebase Auth y datos de conductor en Firestore usando variables de entorno y/o panel seguro.
 
 ### Para Pasajeros:
 - Acceso anónimo (sin credenciales requeridas)

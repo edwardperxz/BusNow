@@ -14,9 +14,9 @@ exports.calculateETA = functions.https.onCall(async (data, context) => {
     const origin = `${busLocation.latitude},${busLocation.longitude}`;
     const destination = `${stopLocation.latitude},${stopLocation.longitude}`;
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY || (functions.config().maps && functions.config().maps.key) || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || (functions.config().maps && functions.config().maps.key);
     if (!apiKey) {
-      throw new functions.https.HttpsError('failed-precondition', 'Falta GOOGLE_MAPS_API_KEY en las funciones');
+      throw new functions.https.HttpsError('failed-precondition', 'Falta GOOGLE_MAPS_API_KEY segura en Cloud Functions');
     }
 
     const url = 'https://maps.googleapis.com/maps/api/directions/json';

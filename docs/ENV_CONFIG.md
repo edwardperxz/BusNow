@@ -24,7 +24,7 @@ npm run deploy
 ### **📱 Project Configuration**
 ```env
 # EAS Project ID (obligatorio)
-EXPO_PUBLIC_PROJECT_ID=8c416071-7ede-4c04-ac94-bda93ae971ca
+EXPO_PUBLIC_PROJECT_ID=your_expo_project_id_here
 ```
 
 ### **🗺️ Google Maps (opcional)**
@@ -54,7 +54,7 @@ EXPO_PUBLIC_MOCK_DATA=true
 
 ## 🔄 **Funcionamiento Automático**
 
-### **Script de Configuración (`configure-app.js`)**
+### **Script de Configuración (`scripts/configure-app.js`)**
 - Lee variables de `.env`
 - Actualiza `app.json` dinámicamente
 - Hace backup automático
@@ -64,7 +64,7 @@ EXPO_PUBLIC_MOCK_DATA=true
 ```json
 {
   "scripts": {
-    "configure": "node configure-app.js",
+    "configure": "node scripts/configure-app.js",
     "preeas": "npm run configure"
   }
 }
@@ -78,7 +78,7 @@ El script de deployment ejecuta automáticamente la configuración antes de cual
 ### **`.env`** - Configuración activa
 ```env
 # Tu configuración actual
-EXPO_PUBLIC_PROJECT_ID=8c416071-7ede-4c04-ac94-bda93ae971ca
+EXPO_PUBLIC_PROJECT_ID=your_expo_project_id_here
 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID=
 # ... más variables
 ```
@@ -90,7 +90,7 @@ EXPO_PUBLIC_PROJECT_ID=your_expo_project_id_here
 # ... variables de ejemplo
 ```
 
-### **`configure-app.js`** - Configurador automático
+### **`scripts/configure-app.js`** - Configurador automático
 - Procesador de variables de entorno
 - Validación de configuración
 - Backup y recovery automático

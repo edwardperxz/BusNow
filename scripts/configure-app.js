@@ -3,10 +3,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const projectRoot = path.resolve(__dirname, '..');
 
 // Función para cargar .env manualmente
 function loadEnv() {
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(projectRoot, '.env');
   
   if (!fs.existsSync(envPath)) {
     console.error('❌ Error: Archivo .env no encontrado');
@@ -42,7 +43,7 @@ try {
   console.log(`✅ PROJECT_ID encontrado: ${env.EXPO_PUBLIC_PROJECT_ID}`);
   
   // Leer app.json
-  const appJsonPath = path.join(__dirname, 'app.json');
+  const appJsonPath = path.join(projectRoot, 'app.json');
   const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
   
   // Hacer backup
@@ -90,9 +91,9 @@ try {
   console.error('❌ Error durante la configuración:', error.message);
   
   // Restaurar backup si existe
-  const backupPath = path.join(__dirname, 'app.json.backup');
+  const backupPath = path.join(projectRoot, 'app.json.backup');
   if (fs.existsSync(backupPath)) {
-    fs.copyFileSync(backupPath, path.join(__dirname, 'app.json'));
+    fs.copyFileSync(backupPath, path.join(projectRoot, 'app.json'));
     fs.unlinkSync(backupPath);
     console.log('🔄 app.json restaurado desde backup');
   }
