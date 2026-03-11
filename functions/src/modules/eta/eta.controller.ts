@@ -3,10 +3,11 @@ import { logger } from "firebase-functions";
 import { validateCalculateETARequest } from "../../utils/validators";
 import { calculateETAService, getRouteDirectionsService } from "./eta.service";
 import { checkRateLimit } from "../../utils/rateLimit";
+import { GOOGLE_MAPS_API_KEY } from "../../config/googleMaps";
 
 const ETA_RATE = { maxRequests: 4, windowSeconds: 60 };
 
-export const calculateETA = onCall(async (request) => {
+export const calculateETA = onCall({ invoker: "public", secrets: [GOOGLE_MAPS_API_KEY] }, async (request) => {
   try {
     if (request.auth?.uid) {
       await checkRateLimit(request.auth.uid, "calculateETA", ETA_RATE);
@@ -31,7 +32,7 @@ export const calculateETA = onCall(async (request) => {
   }
 });
 
-export const getRouteDirections = onCall(async (request) => {
+export const getRouteDirections = onCall({ invoker: "public", secrets: [GOOGLE_MAPS_API_KEY] }, async (request) => {
   try {
     if (request.auth?.uid) {
       await checkRateLimit(request.auth.uid, "getRouteDirections", ETA_RATE);

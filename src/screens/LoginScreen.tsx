@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 import {
-  View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
-  ActivityIndicator
 } from 'react-native';
-import { getTheme } from '../styles/colors';
-import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { useSettings } from '../context/SettingsContext';
+import { AuthNavigation } from '../features/auth/types';
+import AuthScreenLayout from '../features/auth/components/AuthScreenLayout';
+import AuthTextInput from '../features/auth/components/AuthTextInput';
+import AuthPrimaryButton from '../features/auth/components/AuthPrimaryButton';
 
-export default function LoginScreen({ navigation }: any) {
-  const { theme } = useSettings();
+interface LoginScreenProps {
+  navigation: AuthNavigation;
+}
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { signIn } = useAuth();
-  const colors = getTheme(theme === 'dark');
+  const { colors } = useAppTheme();
+  const { t } = useSettings();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +28,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      Alert.alert(t('common.error'), t('auth.fillAllFields'));
       return;
     }
 
@@ -37,31 +40,17 @@ export default function LoginScreen({ navigation }: any) {
         navigation.navigate('map');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('common.error'), error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.white }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.gray900 }]}>BusNow</Text>
-        <Text style={[styles.subtitle, { color: colors.gray600 }]}>
-          Inicia sesión para continuar
-        </Text>
-
-        <TextInput
-          style={[styles.input, { 
-            backgroundColor: colors.gray100,
-            borderColor: colors.gray300,
-            color: colors.gray900
-          }]}
-          placeholder="Correo electrónico"
-          placeholderTextColor={colors.gray500}
+    <AuthScreenLayout colors={colors} title="BusNow" subtitle={t('auth.loginSubtitle')}>
+        <AuthTextInput
+          colors={colors}
+          placeholder={t('auth.emailPlaceholder')}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -69,38 +58,23 @@ export default function LoginScreen({ navigation }: any) {
           autoComplete="email"
         />
 
-        <TextInput
-          style={[styles.input, { 
-            backgroundColor: colors.gray100,
-            borderColor: colors.gray300,
-            color: colors.gray900
-          }]}
-          placeholder="Contraseña"
-          placeholderTextColor={colors.gray500}
+        <AuthTextInput
+          colors={colors}
+          placeholder={t('auth.passwordPlaceholder')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="password"
         />
 
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Iniciar Sesión</Text>
-          )}
-        </TouchableOpacity>
+        <AuthPrimaryButton colors={colors} label={t('auth.loginButton')} loading={loading} onPress={handleLogin} />
 
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => navigation.navigate('Register')}
         >
           <Text style={[styles.linkText, { color: colors.primary }]}>
-            ¿No tienes cuenta? Regístrate
+            {t('auth.noAccount')}
           </Text>
         </TouchableOpacity>
 
@@ -109,54 +83,14 @@ export default function LoginScreen({ navigation }: any) {
           onPress={() => navigation.navigate('map')}
         >
           <Text style={[styles.linkText, { color: colors.gray600 }]}>
-            ← Volver al mapa
+            {t('auth.backToMap')}
           </Text>
         </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    </AuthScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  input: {
-    height: 56,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  button: {
-    height: 56,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   linkButton: {
     marginTop: 16,
     alignItems: 'center',

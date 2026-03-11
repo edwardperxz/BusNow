@@ -14,10 +14,11 @@ import { BusNowColors, getTheme } from '../../styles/colors';
 import { useSettings } from '../../context/SettingsContext';
 import { useSearch } from '../../context/SearchContext';
 import { useAuth } from '../../context/AuthContext';
+import { AppScreen } from '../../types/navigation';
 
 const CustomTabNavigator: React.FC = () => {
   const { user, profile, loading, isAnonymous, continueAsGuest, signOut } = useAuth();
-  const [activeScreen, setActiveScreen] = useState('map');
+  const [activeScreen, setActiveScreen] = useState<AppScreen>('map');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const { theme } = useSettings();
@@ -61,8 +62,8 @@ const CustomTabNavigator: React.FC = () => {
         setAuthScreen('login');
         setActiveScreen('auth');
       }
-    } else {
-      setActiveScreen(key);
+    } else if (['map', 'routes', 'home', 'settings', 'auth', 'driver'].includes(key)) {
+      setActiveScreen(key as AppScreen);
     }
   };
 

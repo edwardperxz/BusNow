@@ -2,7 +2,7 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 import { getRouteDetailService, getRoutesService } from "./routes.service";
 
-export const getRoutes = onCall(async (_request) => {
+export const getRoutes = onCall({ invoker: "public" }, async (_request) => {
   try {
     const routes = await getRoutesService();
     return { ok: true, routes };
@@ -13,7 +13,7 @@ export const getRoutes = onCall(async (_request) => {
   }
 });
 
-export const getRouteDetail = onCall(async (request) => {
+export const getRouteDetail = onCall({ invoker: "public" }, async (request) => {
   try {
     const routeId = String(request.data?.routeId || "").trim();
 
