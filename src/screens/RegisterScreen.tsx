@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { useAuth, UserRole } from '../context/AuthContext';
+import { useAuth, PublicUserRole } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { useSettings } from '../context/SettingsContext';
 import { AuthNavigation } from '../features/auth/types';
@@ -27,7 +27,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('user');
+  const [role, setRole] = useState<PublicUserRole>('passenger');
   const [busNumber, setBusNumber] = useState('');
   const [loading, setLoading] = useState(false);
 

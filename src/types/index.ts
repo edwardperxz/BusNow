@@ -21,7 +21,7 @@ export interface User {
   id: string;
   name?: string;
   email?: string;
-  type: 'passenger' | 'driver';
+  type: 'passenger' | 'driver' | 'admin';
   isAnonymous: boolean;
   deviceId: string;
   createdAt: Date;
@@ -42,6 +42,11 @@ export interface Driver extends User {
   isOnline: boolean;
   currentRouteId?: string;
   vehicleId?: string;
+}
+
+export interface Admin extends User {
+  type: 'admin';
+  permissions?: string[];
 }
 
 // Empresa operadora

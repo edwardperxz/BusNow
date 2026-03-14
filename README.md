@@ -7,7 +7,7 @@
 ## 📋 Resumen del MVP
 
 ### 🎯 Objetivo
-Calcular y mostrar ETA (tiempo estimado de llegada) dinámico de buses y visualizar su movimiento en tiempo real. El conductor envía su ubicación cada 5 segundos a Firestore y el usuario ve las actualizaciones instantáneamente mediante listeners en tiempo real (onSnapshot). El cálculo de ETA se realiza vía Cloud Function callable que consume Google Directions API.
+Calcular y mostrar ETA (tiempo estimado de llegada) dinámico de buses y visualizar su movimiento en tiempo real. El conductor envía su ubicación cada 5 segundos a Firestore y el usuario ve las actualizaciones instantáneamente mediante listeners en tiempo real (onSnapshot). El cálculo de ETA se realiza vía Cloud Function callable que consume **OSRM** (Open Source Routing Machine).
 
 ### � Sistema de Roles
 La app tiene **dos roles diferenciados** con interfaces y permisos distintos:
@@ -28,7 +28,7 @@ La app tiene **dos roles diferenciados** con interfaces y permisos distintos:
 ### �🔑 Decisiones Clave
 - Backend = Firebase (Firestore, Auth, Functions). No se usa servidor Node propio.
 - Tracking = Firestore listeners (pseudo WebSocket).
-- ETA dinámico = Cloud Function `calculateETA` usando Google Directions API.
+- ETA dinámico = Cloud Function `calculateETA` usando **OSRM** (Open Source Routing Machine).
 - Autenticación = Firebase Auth (Email/Password) con AsyncStorage para persistencia.
 - Seguridad = Reglas de Firestore + Callable Functions + separación de claves.
 - Roles = Definidos en `/users/{uid}` con campo `role: 'driver' | 'passenger'`.
@@ -83,7 +83,7 @@ Archivo: `functions/src/index.ts`
 
 Responsable de:
 - Recibir coordenadas de bus y parada
-- Construir request a Google Directions API (modo driving, traffic real time)
+- Construir request a **OSRM** (modo driving)
 - Parsear route y leg → devolver datos más polyline
 - Manejo de errores estándar con `HttpsError`
 
@@ -91,7 +91,7 @@ Ejemplo (ya implementado) simplificado:
 ```js
 exports.calculateETA = functions.https.onCall(async (data) => {
   const { busLocation, stopLocation } = data;
-  // ... llamada axios a Directions ...
+  // ... llamada OSRM para calcular ruta driving ...
   return { ok: true, eta: { durationSeconds, distanceMeters, polyline } };
 });
 ```
@@ -209,7 +209,7 @@ firebase deploy --only firestore:rules
 
 ---
 
-### 2️⃣ **Buscador de Lugares con Google Places API**
+### 2️⃣ **Buscador de Lugares con Nominatim (OpenStreetMap)**
 
 #### **Componente Principal** (`GooglePlacesSearchInteractive.tsx`)
 
@@ -251,13 +251,14 @@ firebase deploy --only firestore:rules
 - **Radio de búsqueda** de 50km desde David, Chiriquí
 - **Idioma español** en resultados
 
-**Integración con Google Places API**:
-```javascript
-// Autocomplete para sugerencias
-https://maps.googleapis.com/maps/api/place/autocomplete/json
+**Integración con Nominatim (OpenStreetMap)**:
+```
+# Autocomplete para sugerencias
+https://nominatim.openstreetmap.org/search?q={query}&format=jsonv2
 
-// Details para coordenadas exactas
-https://maps.googleapis.com/maps/api/place/details/json
+# Details para coordenadas exactas (formato osm:type:id)
+https://nominatim.openstreetmap.org/lookup?osm_ids={id}&format=jsonv2
+# o directamente desde placeId con prefijo coord:lat,lon
 ```
 
 **Flujo de búsqueda**:
@@ -273,12 +274,12 @@ https://maps.googleapis.com/maps/api/place/details/json
 
 ---
 
-### 3️⃣ **Mapa Interactivo con Google Maps**
+### 3️⃣ **Mapa Interactivo con OpenFreeMap (MapLibre)**
 
 #### **Pantalla del Mapa** (`MapScreen.tsx`)
 
 **Componentes visuales**:
-- **Google Maps nativo** (react-native-maps)
+- **Mapa MapLibre/OpenFreeMap** (`OpenFreeMapView`) — nativo en web, WebView en iOS/Android
 - **Marcador de ubicación del usuario** (GPS en tiempo real)
 - **Ruta trazada en carretera** (línea roja de 4px)
 - **Marcadores de origen y destino**:
@@ -292,12 +293,11 @@ https://maps.googleapis.com/maps/api/place/details/json
 1. **Ubicación del Usuario**:
    - Solicita permisos de geolocalización al inicio
    - Actualización continua de posición
-   - Marcador azul nativo de Google Maps
+   - Marcador azul en posición actual
    - Botón para centrar cámara en ubicación actual
 
 2. **Trazado de Rutas en Carreteras**:
-   - Usa **Google Directions API** con direcciones de texto
-   - Ejemplo actual: "Parque Cervantes, David" → "Romero Doleguita, David"
+   - Usa **OSRM** para calcular ruta real por carreteras
    - Polyline decodificado con algoritmo personalizado (`utils/polyline.ts`)
    - **Sigue exactamente las carreteras reales** (no líneas rectas)
    - Información en consola: distancia, duración, cantidad de puntos
@@ -309,27 +309,16 @@ https://maps.googleapis.com/maps/api/place/details/json
    - Panel de búsqueda se oculta tras selección
 
 4. **Modos de Visualización**:
-   - **Modo claro**: Colores estándar de Google Maps
-   - **Modo oscuro**: Estilo personalizado con JSON (darkMapStyle)
+   - **Modo claro**: Estilo `bright` de OpenFreeMap
+   - **Modo oscuro**: Estilo personalizado (configurado en `OpenFreeMapView`)
    - Cambio automático según tema del sistema
 
-**Configuración de Google Maps**:
+**Sin API Key requerida** — OpenFreeMap y OSRM son servicios gratuitos de OpenStreetMap:
 ```typescript
-// API Key configurado en app.json
-{
-  "android": {
-    "config": {
-      "googleMaps": {
-        "apiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
-      }
-    }
-  },
-  "ios": {
-    "config": {
-      "googleMapsApiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
-    }
-  }
-}
+// Tiles cargados sin autenticación desde
+https://tiles.openfreemap.org/styles/bright
+// Rutas calculadas sin API key desde
+https://router.project-osrm.org/route/v1/driving/{coordinates}
 ```
 
 **Permisos requeridos**:
@@ -471,20 +460,21 @@ const { t } = useSettings();
 Se reutilizan las existentes (todas expuestas vía Expo porque son claves públicas de cliente). Agregada `FIREBASE_ADMIN_SDK_KEY` placeholder solo para despliegue seguro si se necesitara algún script adicional (no usada en app cliente).
 
 ```
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=...
 EXPO_PUBLIC_FIREBASE_API_KEY=...
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
 EXPO_PUBLIC_LOCATION_UPDATE_INTERVAL=5000
-FIREBASE_ADMIN_SDK_KEY= (no se expone en cliente, solo CI/CD o funciones)
+# OSM providers (sin API Key)
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
+OSRM_BASE_URL=https://router.project-osrm.org
 ```
 
-Cloud Functions debe usar solo `process.env.GOOGLE_MAPS_API_KEY` o `functions.config().maps.key` (sin fallback a variables `EXPO_PUBLIC_*`).
+Cloud Functions consume `NOMINATIM_BASE_URL` y `OSRM_BASE_URL` como variables de entorno (con valores por defecto públicos, sin secretos requeridos).
 
 #### **Decodificador de Polyline** (`utils/polyline.ts`)
 ```typescript
 decodePolyline(encoded: string): Array<{latitude: number, longitude: number}>
 ```
-- Algoritmo de decodificación de polylines de Google Maps
+- Algoritmo compatible con el formato de polyline de OSRM (Google Encoded Polyline Algorithm)
 - Convierte string codificado en array de coordenadas
 - Usado para trazar rutas en el mapa
 - Optimizado para rendimiento (evita llamadas redundantes)
@@ -499,7 +489,7 @@ decodePolyline(encoded: string): Array<{latitude: number, longitude: number}>
 | Auth | Firebase Auth | Sesión conductor / usuarios futuros |
 | Tiempo Real | Firestore listeners | Actualización de ubicación cada ≤5s |
 | Backend Funcional | Cloud Functions callable | Cálculo ETA y futura lógica agregada |
-| Mapas | Google Maps (Directions + Maps) | Rutas y ETA dinámico |
+| Mapas | OpenFreeMap + MapLibre (OSRM + Nominatim) | Rutas y ETA dinámico |
 | Estado local | Hooks/Context | Configuración, tema, idioma |
 
 No existe servidor Express ni Socket.io: simplifica mantenimiento y costo en esta etapa inicial.
@@ -520,10 +510,9 @@ No existe servidor Express ni Socket.io: simplifica mantenimiento y costo en est
 - `react-native-safe-area-context: ~5.6.0` - Áreas seguras (notch, etc)
 
 #### **Mapas y Ubicación**:
-- `react-native-maps: ^1.20.1` - Google Maps nativo
+- `maplibre-gl: ^5.x` - Renderizado de mapas vectoriales (web)
+- `react-native-webview: ^13.x` - WebView para mapa en iOS/Android
 - `expo-location: ~19.0.7` - Servicios de geolocalización
-- `@googlemaps/js-api-loader: ^2.0.1` - Loader de Google Maps JS
-- `react-native-google-places-autocomplete: ^2.5.7` - Autocomplete de lugares
 
 #### **Gestos y Animaciones**:
 - `react-native-gesture-handler: ^2.28.0` - Gestos nativos
@@ -586,9 +575,6 @@ No existe servidor Express ni Socket.io: simplifica mantenimiento y costo en est
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BusNow necesita tu ubicación para mostrarte buses cercanos.",
         "NSLocationAlwaysUsageDescription": "BusNow necesita tu ubicación en segundo plano para notificaciones."
-      },
-      "config": {
-        "googleMapsApiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
@@ -602,11 +588,7 @@ No existe servidor Express ni Socket.io: simplifica mantenimiento y costo en est
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION"
       ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
-        }
-      }
+      "config": {}
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -725,7 +707,7 @@ Solicita permisos de ubicación
   ↓
 Carga ruta predefinida (Parque Cervantes → Romero Doleguita)
   ↓
-Llama a Google Directions API
+Llama a Cloud Function `getRouteDirections` (OSRM)
   ↓
 Decodifica polyline
   ↓
@@ -744,13 +726,13 @@ Usuario escribe en campo de búsqueda
   ↓
 [Debounce 300ms]
   ↓
-Llama a Google Places Autocomplete API
+Llama a Cloud Function `placesAutocomplete` (Nominatim)
   ↓
 Muestra sugerencias en lista
   ↓
 Usuario selecciona un lugar
   ↓
-Llama a Google Places Details API
+Llama a Cloud Function `placeDetails` (Nominatim)
   ↓
 Obtiene coordenadas exactas
   ↓
@@ -876,8 +858,8 @@ Definición de DONE para este MVP Firebase: ubicación emitida y escuchada en ti
 
 ### ✅ **Completamente Funcional**
 - ✅ Navegación entre pantallas (4 tabs + drawer)
-- ✅ Búsqueda de lugares con Google Places API
-- ✅ Visualización de mapa con Google Maps
+- ✅ Búsqueda de lugares con Nominatim (OpenStreetMap)
+- ✅ Visualización de mapa con OpenFreeMap (MapLibre)
 - ✅ Trazado de rutas en carreteras reales
 - ✅ Ubicación del usuario en tiempo real
 - ✅ Panel de búsqueda con 3 estados deslizables
@@ -897,7 +879,7 @@ Definición de DONE para este MVP Firebase: ubicación emitida y escuchada en ti
 - ⚠️ Estadísticas y analíticas (pantalla placeholder)
 
 ### 🚫 **No Implementado**
-- ❌ Backend API (todo funciona con APIs de Google)
+- ❌ Backend API (todo funciona con servicios OSM de código abierto)
 - ❌ Base de datos (solo AsyncStorage local)
 - ❌ Autenticación real de usuarios
 - ❌ Tracking GPS de buses reales
@@ -1021,12 +1003,6 @@ cd functions
 # Instalar dependencias
 npm install
 
-# Configurar API Key segura (recomendado)
-firebase functions:config:set maps.key="TU_GOOGLE_MAPS_API_KEY_PRIVADA"
-
-# Ver configuración actual
-firebase functions:config:get
-
 # Deploy
 firebase deploy --only functions
 
@@ -1034,10 +1010,7 @@ firebase deploy --only functions
 firebase deploy --only functions:calculateETA
 ```
 
-**Nota importante sobre API Keys**:
-- La Cloud Function usa solo: `functions.config().maps.key` o `process.env.GOOGLE_MAPS_API_KEY`
-- No se debe usar fallback a `EXPO_PUBLIC_*` en backend
-- **Recomendado**: Configurar `maps.key` con clave privada para evitar límites de cuota
+**Nota**: Las Cloud Functions usan Nominatim y OSRM (servicios públicos gratuitos). No se requiere configurar API Keys para geolocalización ni rutas.
 
 #### **2. Deploy Reglas de Firestore**
 
@@ -1067,11 +1040,10 @@ firebase deploy -m "Agregar calculateETA con tráfico real"
 ```bash
 # Configurar múltiples variables
 firebase functions:config:set \
-  maps.key="$GOOGLE_MAPS_API_KEY" \
   app.env="production"
 
-# Eliminar variable
-firebase functions:config:unset maps.key
+# Ver configuración actual
+firebase functions:config:get
 
 # Exportar a archivo local para emuladores (solo local, no versionar)
 firebase functions:config:get > functions/.runtimeconfig.json
@@ -1082,7 +1054,6 @@ firebase functions:config:get > functions/.runtimeconfig.json
 # .env o src/.env
 EXPO_PUBLIC_FIREBASE_API_KEY=...
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=...
 ```
 
 ---

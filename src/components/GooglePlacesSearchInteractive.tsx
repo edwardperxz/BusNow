@@ -16,13 +16,12 @@ import {
   Keyboard,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { httpsCallable } from 'firebase/functions';
 
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fn } from '../services/firebaseApp';
+import { getPlaceDetails, searchPlaces } from '../services/mapProviders';
 
 const { width, height } = Dimensions.get('window');
 
@@ -89,8 +88,6 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
   const { theme } = useSettings();
   const colors = getTheme(theme === 'dark');
   const isDark = theme === 'dark';
-  const placesAutocompleteFn = httpsCallable(fn, 'placesAutocomplete');
-  const placeDetailsFn = httpsCallable(fn, 'placeDetails');
 
   // Optimización: Memoización de estilos dinámicos para mejor rendimiento
   const dynamicStyles = useCallback(() => ({
@@ -306,7 +303,7 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
     }
   };
 
-  const searchPlaces = async (searchQuery: string) => {
+  const searchPlacesByQuery = async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 3) {
       setPredictions([]);
       setShowResults(false);
@@ -316,16 +313,15 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await placesAutocompleteFn({
+      const predictionsResult = await searchPlaces({
         query: searchQuery,
         countryCode,
         location,
         radius,
       });
-      const data = response.data as { ok?: boolean; predictions?: Place[] };
 
-      if (data?.ok && Array.isArray(data.predictions)) {
-        setPredictions(data.predictions);
+      if (Array.isArray(predictionsResult) && predictionsResult.length > 0) {
+        setPredictions(predictionsResult);
         setShowResults(true);
       } else {
         setPredictions([]);
@@ -347,7 +343,7 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
     }
 
     timeoutRef.current = setTimeout(() => {
-      searchPlaces(text);
+      searchPlacesByQuery(text);
     }, 300); // Debounce optimizado
   }, [countryCode, location, radius]);
 
@@ -369,26 +365,18 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
     }
   }, []);
 
-  const getPlaceDetails = async (placeId: string) => {
+  const resolvePlaceDetails = async (placeId: string) => {
     setIsLoading(true);
     try {
-      const response = await placeDetailsFn({ placeId });
-      const data = response.data as {
-        ok?: boolean;
-        result?: {
-          geometry?: { location?: { lat: number; lng: number } };
-          formatted_address?: string;
-          name?: string;
-        };
-      };
+      const result = await getPlaceDetails(placeId);
 
-      if (data?.ok && data.result?.geometry?.location) {
+      if (result?.geometry?.location) {
         const place = predictions.find(p => p.place_id === placeId);
         if (place) {
           const selectedPlace = {
             ...place,
-            latitude: data.result.geometry.location.lat,
-            longitude: data.result.geometry.location.lng,
+            latitude: result.geometry.location.lat,
+            longitude: result.geometry.location.lng,
           };
 
           const recentPlace: RecentPlace = {
@@ -413,7 +401,7 @@ const GooglePlacesSearchInteractive: React.FC<GooglePlacesSearchProps> = ({
   };
 
   const handlePlacePress = (place: Place) => {
-    getPlaceDetails(place.place_id);
+    resolvePlaceDetails(place.place_id);
   };
 
   const clearSearchOld = () => {

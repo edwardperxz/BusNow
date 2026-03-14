@@ -71,6 +71,8 @@
     "accountType": "Tipo de cuenta",
     "userRole": "Usuario",
     "driverRole": "Conductor",
+    "passengerRole": "Pasajero",
+    "adminRole": "Administrador",
     "fillAllFields": "Por favor completa todos los campos",
     "fillRequiredFields": "Por favor completa todos los campos obligatorios",
     "passwordMismatch": "Las contraseñas no coinciden",
@@ -108,6 +110,23 @@
     "retry": "Reintentar",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
-    "back": "Atrás"
+    "back": "Atrás",
+    "save": "Guardar"
+  },
+  "favorites": {
+    "title": "Mis Favoritos",
+    "empty": "No tienes rutas guardadas todavía",
+    "remove": "Eliminar de favoritos",
+    "loginRequired": "Inicia sesión para guardar tus rutas favoritas"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "role": "Tipo de cuenta",
+    "editName": "Editar",
+    "noName": "Sin nombre",
+    "saveError": "Error al guardar el nombre",
+    "loginRequired": "Inicia sesión para ver tu perfil"
   }
 }

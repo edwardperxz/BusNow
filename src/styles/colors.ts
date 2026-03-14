@@ -6,6 +6,7 @@ export const LightTheme = {
   secondary: '#163C78',    // Azul fuerte - Acciones secundarias y navegación
   secondaryLight: '#B76D68', // Rosa suave - Elementos de apoyo y estados
   accent: '#E09F3E',       // Naranja - Llamadas a la acción e información importante
+  error: '#B91C1C',        // Rojo para acciones destructivas
   
   // Grises para elementos neutros
   gray100: '#F5F5F5',
@@ -46,6 +47,7 @@ export const DarkTheme = {
   secondary: '#2E5BBA',    // Azul más brillante
   secondaryLight: '#D47B76', // Rosa más suave para modo oscuro
   accent: '#F4B942',       // Naranja más brillante
+  error: '#EF4444',        // Rojo para acciones destructivas en tema oscuro
   
   // Grises invertidos para modo oscuro
   gray100: '#2A2A2A',      // Fondo más oscuro
@@ -213,12 +215,64 @@ export const CommonStyles = {
     paddingHorizontal: 16,
   },
 
-  card: {
-    backgroundColor: BusNowColors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  card: (colors = BusNowColors) => ({
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    padding: 16,
+    ...CommonStyles.cardShadow,
+  }),
+
+  input: (colors = BusNowColors) => ({
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.gray800,
+    backgroundColor: colors.white,
+  }),
+
+  tableRow: (colors = BusNowColors) => ({
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  }),
+
+  primaryButton: (colors = BusNowColors) => ({
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  }),
+
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700' as const,
   },
+
+  secondaryButton: (colors = BusNowColors) => ({
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: colors.white,
+  }),
+
+  secondaryButtonText: (colors = BusNowColors) => ({
+    color: colors.gray700,
+    fontWeight: '600' as const,
+  }),
 
   button: {
     primary: {

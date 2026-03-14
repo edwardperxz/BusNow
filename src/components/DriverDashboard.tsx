@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  SafeAreaView,
   ScrollView,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BusNowColors, CommonStyles, getTheme } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 

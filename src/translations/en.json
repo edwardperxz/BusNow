@@ -71,6 +71,8 @@
     "accountType": "Account type",
     "userRole": "User",
     "driverRole": "Driver",
+    "passengerRole": "Passenger",
+    "adminRole": "Admin",
     "fillAllFields": "Please complete all fields",
     "fillRequiredFields": "Please complete all required fields",
     "passwordMismatch": "Passwords do not match",
@@ -108,6 +110,23 @@
     "retry": "Retry",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "back": "Back"
+    "back": "Back",
+    "save": "Save"
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "empty": "You have no saved routes yet",
+    "remove": "Remove from favorites",
+    "loginRequired": "Sign in to save your favorite routes"
+  },
+  "profile": {
+    "title": "My Profile",
+    "name": "Name",
+    "email": "Email",
+    "role": "Account type",
+    "editName": "Edit",
+    "noName": "No name",
+    "saveError": "Error saving name",
+    "loginRequired": "Sign in to view your profile"
   }
 }

@@ -27,11 +27,13 @@ npm run deploy
 EXPO_PUBLIC_PROJECT_ID=your_expo_project_id_here
 ```
 
-### **🗺️ Google Maps (opcional)**
+### **🗺️ OpenStreetMap / Geolocalización (opcional)**
 ```env
-# API Keys de Google Maps
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID=your_android_key
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS=your_ios_key
+# Nominatim (geocodificación) — por defecto usa el servidor público de OSM
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
+NOMINATIM_USER_AGENT=BusNow/1.0 (+https://github.com/edwardperxz/BusNow)
+# OSRM (rutas y ETA) — por defecto usa el servidor demo público
+OSRM_BASE_URL=https://router.project-osrm.org
 ```
 
 ### **🔥 Firebase (opcional)**
@@ -79,7 +81,8 @@ El script de deployment ejecuta automáticamente la configuración antes de cual
 ```env
 # Tu configuración actual
 EXPO_PUBLIC_PROJECT_ID=your_expo_project_id_here
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID=
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
+OSRM_BASE_URL=https://router.project-osrm.org
 # ... más variables
 ```
 
@@ -137,13 +140,13 @@ npm run configure
 eas project:info
 ```
 
-### **Google Maps no funciona**
+### **El mapa no carga tiles**
 ```bash
-# Verificar que las API keys están configuradas
-cat .env | grep GOOGLE_MAPS
+# Verificar acceso a OpenFreeMap
+curl https://tiles.openfreemap.org/styles/bright -I
 
-# Re-configurar
-npm run configure
+# Verificar que Nominatim responde
+curl "https://nominatim.openstreetmap.org/search?q=David&format=jsonv2" -H "User-Agent: BusNow/1.0"
 ```
 
 ## 📚 **Flujo de Trabajo**

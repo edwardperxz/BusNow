@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
-import { httpsCallable } from 'firebase/functions';
-import { fn } from '../../../services/firebaseApp';
 import { RouteData } from '../types';
+import { getRouteDetail } from '../../../services/routesApi';
 
 const DEFAULT_ROUTE: RouteData = {
   id: 'ruta-001',
   name: 'Ruta Boquete - David',
+  code: 'BD-001',
+  origin: 'Boquete',
+  midpoint: 'Gualaca',
+  destination: 'David',
   startPoint: 'Boquete',
   endPoint: 'David',
+  frequency: '15 min',
+  fare: '$2.50',
+  status: 'active',
+  activeBuses: 0,
+  isActive: true,
+  geometryPolyline: '',
+  anchorPointsCount: 0,
   stops: [
     {
       id: '1',
@@ -56,14 +66,10 @@ export function useRouteDetailData(routeId?: string, routeProp?: RouteData) {
 
   useEffect(() => {
     if (!routeId) return;
-    const getRouteDetailFn = httpsCallable<{ routeId: string }, { ok: boolean; route: RouteData }>(
-      fn,
-      'getRouteDetail'
-    );
     setLoadingRoute(true);
-    getRouteDetailFn({ routeId })
-      .then((res) => {
-        if (res.data?.route) setRoute(res.data.route);
+    getRouteDetail(routeId)
+      .then((data) => {
+        if (data) setRoute(data);
       })
       .catch((err) => console.error('[RouteDetail] Error al cargar ruta:', err))
       .finally(() => setLoadingRoute(false));

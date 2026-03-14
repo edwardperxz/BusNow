@@ -59,28 +59,11 @@ try {
   
   appJson.expo.extra.eas.projectId = env.EXPO_PUBLIC_PROJECT_ID;
   
-  // También actualizar Google Maps API Keys si están disponibles
-  if (env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID) {
-    appJson.expo.android.config.googleMaps.apiKey = env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID;
-  }
-  
-  if (env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS) {
-    appJson.expo.ios.config.googleMapsApiKey = env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS;
-  }
-  
   // Guardar app.json actualizado
   fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2));
   
   console.log('✅ app.json actualizado exitosamente');
   console.log(`📱 Project ID: ${env.EXPO_PUBLIC_PROJECT_ID}`);
-  
-  if (env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID) {
-    console.log('🗺️ Google Maps Android API Key configurado');
-  }
-  
-  if (env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS) {
-    console.log('🗺️ Google Maps iOS API Key configurado');
-  }
   
   console.log('🎉 Configuración completa! app.json listo para EAS');
   

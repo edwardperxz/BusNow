@@ -8,13 +8,28 @@ import DriverScreen from '../../screens/DriverScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import LoginScreen from '../../screens/LoginScreen';
 import RegisterScreen from '../../screens/RegisterScreen';
+import FavoritesScreen from '../../screens/FavoritesScreen';
+import ProfileScreen from '../../screens/ProfileScreen';
+import AdminScreen from '../../screens/AdminScreen';
 import HamburgerMenu from './HamburgerMenu';
 import HamburgerButton from './HamburgerButton';
 import { BusNowColors, getTheme } from '../../styles/colors';
 import { useSettings } from '../../context/SettingsContext';
 import { useSearch } from '../../context/SearchContext';
-import { useAuth } from '../../context/AuthContext';
+import { AuthenticatedUserRole, useAuth } from '../../context/AuthContext';
 import { AppScreen } from '../../types/navigation';
+
+function getLandingScreenForRole(role: AuthenticatedUserRole): AppScreen {
+  if (role === 'driver') {
+    return 'driver';
+  }
+
+  if (role === 'admin') {
+    return 'admin';
+  }
+
+  return 'map';
+}
 
 const CustomTabNavigator: React.FC = () => {
   const { user, profile, loading, isAnonymous, continueAsGuest, signOut } = useAuth();
@@ -24,6 +39,7 @@ const CustomTabNavigator: React.FC = () => {
   const { theme } = useSettings();
   const { searchState } = useSearch();
   const colors = getTheme(theme === 'dark');
+  const lastRedirectedUid = React.useRef<string | null>(null);
 
   // Crear usuario anónimo automáticamente si no hay ningún usuario
   React.useEffect(() => {
@@ -31,6 +47,22 @@ const CustomTabNavigator: React.FC = () => {
       continueAsGuest();
     }
   }, [loading, profile, isAnonymous, user, continueAsGuest]);
+
+  React.useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (isAnonymous || !profile?.uid || !profile.role) {
+      lastRedirectedUid.current = null;
+      return;
+    }
+
+    if (lastRedirectedUid.current !== profile.uid) {
+      setActiveScreen(getLandingScreenForRole(profile.role));
+      lastRedirectedUid.current = profile.uid;
+    }
+  }, [loading, isAnonymous, profile?.uid, profile?.role]);
 
   // Mostrar loader mientras verifica autenticación
   if (loading) {
@@ -62,7 +94,14 @@ const CustomTabNavigator: React.FC = () => {
         setAuthScreen('login');
         setActiveScreen('auth');
       }
-    } else if (['map', 'routes', 'home', 'settings', 'auth', 'driver'].includes(key)) {
+    } else if (key === 'admin') {
+      if (profile?.role === 'admin') {
+        setActiveScreen('admin');
+      } else {
+        setAuthScreen('login');
+        setActiveScreen('auth');
+      }
+    } else if (['map', 'routes', 'home', 'settings', 'auth', 'driver', 'favorites', 'profile', 'admin'].includes(key)) {
       setActiveScreen(key as AppScreen);
     }
   };
@@ -103,6 +142,15 @@ const CustomTabNavigator: React.FC = () => {
       }
     }
 
+    if (activeScreen === 'admin') {
+      if (profile?.role === 'admin') {
+        return <AdminScreen navigation={{ navigate: setActiveScreen }} />;
+      }
+
+      setActiveScreen('map');
+      return <MapScreen />;
+    }
+
     // Pantallas normales (disponibles para todos)
     switch (activeScreen) {
       case 'map':
@@ -113,6 +161,10 @@ const CustomTabNavigator: React.FC = () => {
         return <HomeScreen navigation={{ navigate: setActiveScreen }} />;
       case 'settings':
         return <SettingsScreen navigation={{ navigate: setActiveScreen }} />;
+      case 'favorites':
+        return <FavoritesScreen navigation={{ navigate: setActiveScreen }} />;
+      case 'profile':
+        return <ProfileScreen navigation={{ navigate: setActiveScreen }} />;
       default:
         return <MapScreen />;
     }

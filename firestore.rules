@@ -2,6 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isTicketParticipant(ticketData) {
+      return isSignedIn() && (
+        ticketData.createdBy == request.auth.uid ||
+        ticketData.assignedTo == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
     // Buses: lectura pública para pasajeros.
     // ESCRITURA BLOQUEADA para el cliente — todas las actualizaciones de posición
     // deben pasar por el callable `updateDriverLocation` (Cloud Function con Admin SDK).
@@ -12,14 +34,69 @@ service cloud.firestore {
 
     // Perfiles de usuarios
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null; // Permitir crear perfil al registrarse
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+      allow create: if isSignedIn();
+
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /routes/{routeId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /stops/{stopId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Catálogo de ciudades (solo lectura cliente)
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Timings calculados por backend (lectura pública para movilidad)
+    match /bus_timings/{timingId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Notificaciones para usuarios o temas
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (
+        resource.data.targetUid == request.auth.uid ||
+        resource.data.audience == 'topic' ||
+        isAdmin()
+      );
+      allow write: if false;
+    }
+
+    // Tickets de soporte con acceso owner/assigned/admin
+    match /support_tickets/{ticketId} {
+      allow create: if isSignedIn();
+      allow read: if isTicketParticipant(resource.data);
+      allow update: if isTicketParticipant(resource.data);
+      allow delete: if isAdmin();
+
+      match /responses/{responseId} {
+        allow read: if isTicketParticipant(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data);
+        allow write: if false;
+      }
+    }
+
+    // Auditoría solo visible para admins; escrituras desde Admin SDK.
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // Cache de ETA — solo lectura para el cliente (escrituras vía Admin SDK en backend)
     match /eta_cache/{cacheId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
       allow write: if false;
     }
 

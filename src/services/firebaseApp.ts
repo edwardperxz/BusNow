@@ -19,7 +19,7 @@ const app: FirebaseApp = getApps().length ? getApps()[0] : initializeApp(firebas
 // Inicializar Auth
 const auth: Auth = getAuth(app);
 const db = getFirestore(app);
-const fn = getFunctions(app);
+const fn = getFunctions(app, 'us-central1');
 
 export { auth, db, fn };
 export default app;

@@ -15,9 +15,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.busnow.app",
-      "config": {
-        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
-      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para mostrarte paradas cercanas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "BusNow necesita acceso a tu ubicación para rastrear buses en tiempo real.",
@@ -38,12 +35,7 @@
         "android.permission.VIBRATE",
         "android.permission.INTERNET",
         "android.permission.SYSTEM_ALERT_WINDOW"
-      ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
-        }
-      }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

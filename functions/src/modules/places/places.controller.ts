@@ -2,11 +2,10 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 import { placeDetailsService, placesAutocompleteService } from "./places.service";
 import { checkRateLimit } from "../../utils/rateLimit";
-import { GOOGLE_MAPS_API_KEY } from "../../config/googleMaps";
 
 const PLACES_RATE = { maxRequests: 10, windowSeconds: 60 };
 
-export const placesAutocomplete = onCall({ invoker: "public", secrets: [GOOGLE_MAPS_API_KEY] }, async (request) => {
+export const placesAutocomplete = onCall({ invoker: "public" }, async (request) => {
   try {
     if (request.auth?.uid) {
       await checkRateLimit(request.auth.uid, "placesAutocomplete", PLACES_RATE);
@@ -34,7 +33,7 @@ export const placesAutocomplete = onCall({ invoker: "public", secrets: [GOOGLE_M
   }
 });
 
-export const placeDetails = onCall({ invoker: "public", secrets: [GOOGLE_MAPS_API_KEY] }, async (request) => {
+export const placeDetails = onCall({ invoker: "public" }, async (request) => {
   try {
     if (request.auth?.uid) {
       await checkRateLimit(request.auth.uid, "placeDetails", PLACES_RATE);

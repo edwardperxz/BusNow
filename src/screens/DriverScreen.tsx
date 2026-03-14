@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,52 +6,87 @@ import {
   StyleSheet,
   Alert,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { getTheme } from '../styles/colors';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import busTrackingService from '../services/firebaseBusTracking';
+import { useRoutesData } from '../features/routes/hooks/useRoutesData';
 
 export default function DriverScreen() {
   const { theme } = useSettings();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, updateUserProfile } = useAuth();
   const colors = getTheme(theme === 'dark');
-  
+  const { routes, loading: loadingRoutes } = useRoutesData();
+
   const [isTracking, setIsTracking] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
   const [subscription, setSubscription] = useState<Location.LocationSubscription | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState(profile?.currentRouteId ?? '');
+
+  useEffect(() => {
+    setSelectedRouteId(profile?.currentRouteId ?? '');
+  }, [profile?.currentRouteId]);
+
+  const stopTracking = () => {
+    if (subscription) {
+      subscription.remove();
+      setSubscription(null);
+    }
+    setIsTracking(false);
+    Alert.alert('Servicio detenido', 'Tu ubicacion ya no esta siendo compartida');
+  };
 
   useEffect(() => {
     return () => {
       stopTracking();
     };
-  }, []);
+  }, [subscription]);
+
+  const handleSelectRoute = async (routeId: string) => {
+    setSelectedRouteId(routeId);
+    try {
+      await updateUserProfile({ currentRouteId: routeId });
+    } catch (error) {
+      console.error('No se pudo guardar la ruta del conductor', error);
+    }
+  };
 
   const startTracking = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación para funcionar');
+      const busId = String(profile?.busNumber || '').trim();
+      if (!busId) {
+        Alert.alert('Bus requerido', 'Tu perfil no tiene un bus asignado');
         return;
       }
 
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High
-      });
+      if (!selectedRouteId) {
+        Alert.alert('Ruta requerida', 'Selecciona una ruta antes de iniciar servicio');
+        return;
+      }
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicacion para funcionar');
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setCurrentLocation(loc);
 
-      // Enviar ubicación inicial
       await busTrackingService.sendDriverLocation(
-        profile?.uid || '',
+        busId,
+        selectedRouteId,
         loc.coords.latitude,
         loc.coords.longitude,
         loc.coords.heading || undefined,
-        loc.coords.speed ? loc.coords.speed * 3.6 : undefined // m/s a km/h
+        loc.coords.speed ? loc.coords.speed * 3.6 : undefined,
+        'active'
       );
 
-      // Suscribirse a actualizaciones de ubicación
       const sub = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
@@ -61,124 +96,122 @@ export default function DriverScreen() {
         async (newLocation) => {
           setCurrentLocation(newLocation);
           await busTrackingService.sendDriverLocation(
-            profile?.uid || '',
+            busId,
+            selectedRouteId,
             newLocation.coords.latitude,
             newLocation.coords.longitude,
             newLocation.coords.heading || undefined,
-            newLocation.coords.speed ? newLocation.coords.speed * 3.6 : undefined
+            newLocation.coords.speed ? newLocation.coords.speed * 3.6 : undefined,
+            'active'
           );
         }
       );
 
       setSubscription(sub);
       setIsTracking(true);
-      Alert.alert('Servicio iniciado', 'Tu ubicación está siendo compartida');
+      Alert.alert('Servicio iniciado', 'Tu ubicacion esta siendo compartida');
     } catch (error) {
       console.error('Error iniciando tracking:', error);
       Alert.alert('Error', 'No se pudo iniciar el servicio');
     }
   };
 
-  const stopTracking = () => {
-    if (subscription) {
-      subscription.remove();
-      setSubscription(null);
-    }
-    setIsTracking(false);
-    Alert.alert('Servicio detenido', 'Tu ubicación ya no está siendo compartida');
-  };
-
   const handleLogout = async () => {
-    Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro? Esto detendrá el servicio de rastreo.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar sesión',
-          style: 'destructive',
-          onPress: async () => {
-            stopTracking();
-            await signOut();
-          }
-        }
-      ]
-    );
+    Alert.alert('Cerrar sesion', 'Estas seguro? Esto detendra el servicio de rastreo.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Cerrar sesion',
+        style: 'destructive',
+        onPress: async () => {
+          stopTracking();
+          await signOut();
+        },
+      },
+    ]);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white }]}>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.gray900 }]}>
-          Panel del Conductor
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>
-          Bienvenido, {profile?.name}
-        </Text>
-        {profile?.busNumber && (
+        <Text style={[styles.headerTitle, { color: colors.gray900 }]}>Panel del Conductor</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>Bienvenido, {profile?.name}</Text>
+        {profile?.busNumber ? (
           <View style={[styles.badge, { backgroundColor: colors.primary }]}>
             <Text style={styles.badgeText}>Bus #{profile.busNumber}</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.statusCard, { backgroundColor: colors.gray100 }]}>
           <Text style={[styles.statusLabel, { color: colors.gray600 }]}>Estado del servicio</Text>
           <View style={styles.statusRow}>
-            <View style={[
-              styles.statusDot,
-              { backgroundColor: isTracking ? colors.busActive : colors.busInactive }
-            ]} />
-            <Text style={[styles.statusText, { color: colors.gray900 }]}>
-              {isTracking ? 'En servicio' : 'Fuera de servicio'}
-            </Text>
+            <View style={[styles.statusDot, { backgroundColor: isTracking ? colors.busActive : colors.busInactive }]} />
+            <Text style={[styles.statusText, { color: colors.gray900 }]}>{isTracking ? 'En servicio' : 'Fuera de servicio'}</Text>
           </View>
 
-          {currentLocation && (
+          {currentLocation ? (
             <View style={styles.locationInfo}>
-              <Text style={[styles.locationLabel, { color: colors.gray600 }]}>
-                Última ubicación:
-              </Text>
+              <Text style={[styles.locationLabel, { color: colors.gray600 }]}>Ultima ubicacion:</Text>
               <Text style={[styles.locationText, { color: colors.gray700 }]}>
                 {currentLocation.coords.latitude.toFixed(6)}, {currentLocation.coords.longitude.toFixed(6)}
               </Text>
-              {currentLocation.coords.speed !== null && (
+              {currentLocation.coords.speed !== null ? (
                 <Text style={[styles.locationText, { color: colors.gray700 }]}>
                   Velocidad: {(currentLocation.coords.speed * 3.6).toFixed(1)} km/h
                 </Text>
-              )}
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+
+        <View style={[styles.statusCard, { backgroundColor: colors.gray100 }]}>
+          <Text style={[styles.statusLabel, { color: colors.gray600 }]}>Ruta asignada para esta sesion</Text>
+          {loadingRoutes ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <View style={styles.routeList}>
+              {routes.map((route) => {
+                const selected = selectedRouteId === route.id;
+                return (
+                  <TouchableOpacity
+                    key={route.id}
+                    style={[
+                      styles.routeChip,
+                      {
+                        backgroundColor: selected ? colors.primary : colors.white,
+                        borderColor: selected ? colors.primary : colors.gray300,
+                      },
+                    ]}
+                    onPress={() => handleSelectRoute(route.id)}
+                  >
+                    <Text style={{ color: selected ? '#FFFFFF' : colors.gray800, fontWeight: '700' }}>{route.name}</Text>
+                    <Text style={{ color: selected ? 'rgba(255,255,255,0.8)' : colors.gray500, fontSize: 12 }}>
+                      {route.code ?? route.id}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.mainButton,
-            { backgroundColor: isTracking ? colors.busDelayed : colors.busActive }
-          ]}
+          style={[styles.mainButton, { backgroundColor: isTracking ? colors.busDelayed : colors.busActive }]}
           onPress={isTracking ? stopTracking : startTracking}
         >
-          <Text style={styles.mainButtonText}>
-            {isTracking ? '⏸️ Detener Servicio' : '▶️ Iniciar Servicio'}
-          </Text>
+          <Text style={styles.mainButtonText}>{isTracking ? 'Detener servicio' : 'Iniciar servicio'}</Text>
         </TouchableOpacity>
 
         <Text style={[styles.helpText, { color: colors.gray600 }]}>
-          {isTracking 
-            ? 'Los pasajeros pueden ver tu ubicación en el mapa en tiempo real.'
-            : 'Presiona "Iniciar Servicio" para compartir tu ubicación con los pasajeros.'
-          }
+          {isTracking
+            ? 'Los pasajeros pueden ver tu ubicacion y la ruta asignada en el mapa en tiempo real.'
+            : 'Selecciona la ruta que vas a operar y luego inicia el servicio.'}
         </Text>
-      </View>
+      </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.logoutButton, { borderColor: colors.gray300 }]}
-        onPress={handleLogout}
-      >
-        <Text style={[styles.logoutText, { color: colors.busDelayed }]}>
-          Cerrar Sesión
-        </Text>
+      <TouchableOpacity style={[styles.logoutButton, { borderColor: colors.gray300 }]} onPress={handleLogout}>
+        <Text style={[styles.logoutText, { color: colors.busDelayed }]}>Cerrar sesion</Text>
       </TouchableOpacity>
     </View>
   );
@@ -214,8 +247,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    flex: 1,
     paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   statusCard: {
     padding: 20,
@@ -256,6 +289,15 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 13,
     marginBottom: 2,
+  },
+  routeList: {
+    gap: 10,
+  },
+  routeChip: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   mainButton: {
     height: 64,

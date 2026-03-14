@@ -44,3 +44,34 @@ export function decodePolyline(encoded: string): { latitude: number; longitude: 
 
   return poly;
 }
+
+function encodeCoordinate(value: number): string {
+  let current = value < 0 ? ~(value << 1) : value << 1;
+  let output = '';
+
+  while (current >= 0x20) {
+    output += String.fromCharCode((0x20 | (current & 0x1f)) + 63);
+    current >>= 5;
+  }
+
+  output += String.fromCharCode(current + 63);
+  return output;
+}
+
+export function encodePolyline(coordinates: { latitude: number; longitude: number }[]): string {
+  let lastLatitude = 0;
+  let lastLongitude = 0;
+
+  return coordinates.reduce((encoded, coordinate) => {
+    const latitude = Math.round(coordinate.latitude * 1e5);
+    const longitude = Math.round(coordinate.longitude * 1e5);
+
+    const latitudeDelta = latitude - lastLatitude;
+    const longitudeDelta = longitude - lastLongitude;
+
+    lastLatitude = latitude;
+    lastLongitude = longitude;
+
+    return `${encoded}${encodeCoordinate(latitudeDelta)}${encodeCoordinate(longitudeDelta)}`;
+  }, '');
+}

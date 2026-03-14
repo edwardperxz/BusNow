@@ -1,13 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { UserRole } from '../../../context/AuthContext';
+import { PublicUserRole } from '../../../context/AuthContext';
 import { getTheme } from '../../../styles/colors';
 import { useSettings } from '../../../context/SettingsContext';
 
 interface RoleSelectorProps {
   colors: ReturnType<typeof getTheme>;
-  role: UserRole;
-  onChangeRole: (role: UserRole) => void;
+  role: PublicUserRole;
+  onChangeRole: (role: PublicUserRole) => void;
 }
 
 export default function RoleSelector({ colors, role, onChangeRole }: RoleSelectorProps) {
@@ -20,13 +20,13 @@ export default function RoleSelector({ colors, role, onChangeRole }: RoleSelecto
         <TouchableOpacity
           style={[
             styles.roleButton,
-            role === 'user' && { backgroundColor: colors.primary },
+            role === 'passenger' && { backgroundColor: colors.primary },
             { borderColor: colors.gray300 },
           ]}
-          onPress={() => onChangeRole('user')}
+          onPress={() => onChangeRole('passenger')}
         >
-          <Text style={[styles.roleButtonText, { color: role === 'user' ? colors.white : colors.gray700 }]}>
-            {t('auth.userRole')}
+          <Text style={[styles.roleButtonText, { color: role === 'passenger' ? colors.white : colors.gray700 }]}>
+            {t('auth.passengerRole')}
           </Text>
         </TouchableOpacity>
 

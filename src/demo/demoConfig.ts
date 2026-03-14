@@ -9,14 +9,18 @@ export const DEMO_UPDATE_INTERVAL_MS: number = Number(process.env.EXPO_PUBLIC_LO
 
 export type LatLng = { latitude: number; longitude: number };
 
-// Trayectoria simple en David, Chiriquí para simular movimiento
+// Trayectoria demo que reproduce la ruta R-01 (Aeropuerto → Centro → Romero Norte)
 export const DEMO_PATH: LatLng[] = [
-  { latitude: 8.4333, longitude: -82.4333 },
-  { latitude: 8.4345, longitude: -82.4315 },
-  { latitude: 8.4362, longitude: -82.4298 },
-  { latitude: 8.4380, longitude: -82.4279 },
-  { latitude: 8.4400, longitude: -82.4258 },
-  { latitude: 8.4415, longitude: -82.4239 },
+  { latitude: 8.3909, longitude: -82.4349 }, // Aeropuerto Enrique Malek
+  { latitude: 8.3990, longitude: -82.4340 }, // Frigorsa / Vía Interamericana
+  { latitude: 8.4090, longitude: -82.4350 }, // Cristo Rey
+  { latitude: 8.4155, longitude: -82.4355 }, // Hospital Obaldia
+  { latitude: 8.4295, longitude: -82.4360 }, // Terminal de Buses
+  { latitude: 8.4271, longitude: -82.4310 }, // Parque Cervantes
+  { latitude: 8.4290, longitude: -82.4250 }, // Avenida Estudiante
+  { latitude: 8.4350, longitude: -82.4200 }, // BJ Centro Comercial
+  { latitude: 8.4390, longitude: -82.4155 }, // Romero Norte
 ];
 
 export const DEMO_BUS_ID = 'demo-1';
+export const DEMO_ROUTE_ID = 'r-01';

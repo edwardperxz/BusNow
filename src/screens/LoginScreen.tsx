@@ -35,10 +35,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setLoading(true);
     try {
       await signIn(email, password);
-      // Volver al mapa después de login exitoso
-      if (navigation?.navigate) {
-        navigation.navigate('map');
-      }
     } catch (error: any) {
       Alert.alert(t('common.error'), error.message);
     } finally {

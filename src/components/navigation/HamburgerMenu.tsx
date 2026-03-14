@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { BusNowColors, CommonStyles, getTheme } from '../../styles/colors';
 import { useSettings } from '../../context/SettingsContext';
+import { PRIMARY_NAV_ITEMS } from '../../navigation/appStructure';
 
 interface MenuItem {
   key: string;
@@ -49,23 +50,73 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
   
   // Menú dinámico según el estado del usuario
   const getMenuItems = (): MenuItem[] => {
-    const baseItems: MenuItem[] = [
-      { key: 'map', label: 'Mapa en Tiempo Real', icon: '🗺️', color: '#2196F3' },
-      { key: 'routes', label: 'Rutas de Buses', icon: '🚌', color: '#FF9800' },
-      { key: 'home', label: 'Información', icon: '🏠', color: '#4CAF50' },
-    ];
+    const baseItems: MenuItem[] = PRIMARY_NAV_ITEMS.filter((item) =>
+      item.key === 'map' || item.key === 'routes' || item.key === 'home'
+    ).map((item) => ({
+      key: item.key,
+      label: item.label,
+      icon: item.icon,
+      color: item.color,
+    }));
 
     // Si es conductor autenticado, agregar Panel Conductor
     if (userProfile?.role === 'driver') {
-      baseItems.push({ key: 'driver', label: 'Panel Conductor', icon: '👨‍💼', color: '#9C27B0' });
+      const driverItem = PRIMARY_NAV_ITEMS.find((item) => item.key === 'driver');
+      if (driverItem) {
+        baseItems.push({
+          key: driverItem.key,
+          label: driverItem.label,
+          icon: driverItem.icon,
+          color: driverItem.color,
+        });
+      }
+    }
+
+    if (userProfile?.role === 'admin') {
+      const adminItem = PRIMARY_NAV_ITEMS.find((item) => item.key === 'admin');
+      if (adminItem) {
+        baseItems.push({
+          key: adminItem.key,
+          label: adminItem.label,
+          icon: adminItem.icon,
+          color: adminItem.color,
+        });
+      }
+    }
+
+    // Si está logueado (no anónimo), mostrar Favoritos y Perfil
+    if (!isAnonymous && userProfile) {
+      const extras = ['favorites', 'profile'] as const;
+      extras.forEach((key) => {
+        const found = PRIMARY_NAV_ITEMS.find((item) => item.key === key);
+        if (found) {
+          baseItems.push({ key: found.key, label: found.label, icon: found.icon, color: found.color });
+        }
+      });
     }
 
     // Si no está logueado (anónimo), mostrar opción de login
     if (isAnonymous || !userProfile) {
-      baseItems.push({ key: 'login', label: 'Iniciar Sesión', icon: '🔑', color: '#673AB7' });
+      const loginItem = PRIMARY_NAV_ITEMS.find((item) => item.key === 'login');
+      if (loginItem) {
+        baseItems.push({
+          key: loginItem.key,
+          label: loginItem.label,
+          icon: loginItem.icon,
+          color: loginItem.color,
+        });
+      }
     } else {
       // Si está logueado, mostrar opción de cerrar sesión
-      baseItems.push({ key: 'logout', label: 'Cerrar Sesión', icon: '🚪', color: '#F44336' });
+      const logoutItem = PRIMARY_NAV_ITEMS.find((item) => item.key === 'logout');
+      if (logoutItem) {
+        baseItems.push({
+          key: logoutItem.key,
+          label: logoutItem.label,
+          icon: logoutItem.icon,
+          color: logoutItem.color,
+        });
+      }
     }
 
     return baseItems;
@@ -234,7 +285,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               marginBottom: 12,
             }}>
               <Text style={{ fontSize: 28, color: colors.white === '#1F1F1F' ? '#FFFFFF' : colors.white }}>
-                {userProfile?.role === 'driver' ? '🚌' : isAnonymous ? '👤' : '🧑'}
+                {userProfile?.role === 'driver' ? '🚌' : userProfile?.role === 'admin' ? '🛠️' : isAnonymous ? '👤' : '🧑'}
               </Text>
             </View>
             
@@ -251,7 +302,9 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               color: 'rgba(255, 255, 255, 0.8)',
             }}>
               {userProfile?.role === 'driver' 
-                ? `Conductor • Bus ${userProfile?.busNumber || ''}`
+                ? `${t('auth.driverRole')} • Bus ${userProfile?.busNumber || ''}`
+                : userProfile?.role === 'admin'
+                  ? t('auth.adminRole')
                 : isAnonymous 
                   ? 'Modo Invitado'
                   : userProfile?.email || 'Tu compañero de viaje'}
@@ -312,10 +365,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                     fontSize: 11,
                     color: colors.gray500,
                   }}>
-                    {item.key === 'map' ? 'Seguimiento GPS' :
-                     item.key === 'routes' ? 'Todas las líneas' : 
-                     item.key === 'home' ? 'Información' : 
-                     'Herramientas'}
+                    {PRIMARY_NAV_ITEMS.find((entry) => entry.key === item.key)?.hint || 'Herramientas'}
                   </Text>
                 </View>
 

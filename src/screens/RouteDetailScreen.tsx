@@ -2,17 +2,18 @@ import React from 'react';
 import {
   View,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonStyles } from '../styles/colors';
-import RouteMapVisualization from '../components/RouteMapVisualization';
+import RouteStopsMapView from '../features/map/components/RouteStopsMapView';
 import { useRouteDetailData } from '../features/routes/hooks/useRouteDetailData';
 import RouteDetailHeader from '../features/routes/components/RouteDetailHeader';
 import RouteStopsList from '../features/routes/components/RouteStopsList';
 import RouteDetailBottomBar from '../features/routes/components/RouteDetailBottomBar';
 import { RouteData } from '../features/routes/types';
 import { useAppTheme } from '../hooks/useAppTheme';
+import { decodePolyline } from '../utils/polyline';
 
 interface RouteDetailScreenProps {
   route?: RouteData;
@@ -31,6 +32,19 @@ const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
     routeProp
   );
   const { colors } = useAppTheme();
+  const routeCoordinates = React.useMemo(() => {
+    if (route.geometryPolyline) {
+      return decodePolyline(route.geometryPolyline);
+    }
+
+    if (route.anchorPoints && route.anchorPoints.length > 0) {
+      return route.anchorPoints.map((point) => point.coordinates);
+    }
+
+    return route.stops.map((stop) => stop.coordinates);
+  }, [route.anchorPoints, route.geometryPolyline, route.stops]);
+  const originLabel = route.anchorPoints?.find((point) => point.kind === 'start')?.label ?? route.startPoint;
+  const destinationLabel = route.anchorPoints?.find((point) => point.kind === 'end')?.label ?? route.endPoint;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.gray100 }]}>
@@ -41,7 +55,12 @@ const RouteDetailScreen: React.FC<RouteDetailScreenProps> = ({
       ) : (
         <>
           <View style={[styles.mapContainer, { backgroundColor: colors.white }]}>
-            <RouteMapVisualization stops={route.stops} routeColor={colors.primary} />
+            <RouteStopsMapView
+              stops={route.stops}
+              routeCoordinates={routeCoordinates}
+              originLabel={originLabel}
+              destinationLabel={destinationLabel}
+            />
           </View>
 
           <RouteStopsList

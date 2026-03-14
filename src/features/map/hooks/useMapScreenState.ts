@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { Alert } from 'react-native';
-import { httpsCallable } from 'firebase/functions';
 
 import busTrackingService, { BusLocation } from '../../../services/firebaseBusTracking';
 import { decodePolyline } from '../../../utils/polyline';
-import { fn } from '../../../services/firebaseApp';
+import { getRouteDetail, getRoutes } from '../../../services/routesApi';
 import {
   MapCoordinate,
   MapRegion,
-  RouteDirectionsResponse,
   RoutePoint,
   SelectedPlace,
 } from '../types';
@@ -39,11 +37,9 @@ export function useMapScreenState() {
   const [buses, setBuses] = useState<BusLocation[]>([]);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
 
-  const getRouteDirectionsFn = httpsCallable(fn, 'getRouteDirections');
-
   useEffect(() => {
     initializeLocation();
-    fetchRoute();
+    fetchInitialRoute();
   }, []);
 
   useEffect(() => {
@@ -59,10 +55,15 @@ export function useMapScreenState() {
         setBuses([
           {
             busId: DEMO_BUS_ID,
+            routeId: 'demo-route',
+            driverUid: 'demo-driver',
             latitude: DEMO_PATH[0].latitude,
             longitude: DEMO_PATH[0].longitude,
             heading: 90,
             speed: DEMO_SPEED_KMH,
+            status: 'active',
+            isActive: true,
+            busLabel: DEMO_BUS_ID,
             updatedAt: Date.now(),
           },
         ]);
@@ -73,6 +74,13 @@ export function useMapScreenState() {
       unsubscribe && unsubscribe();
     };
   }, [selectedBusId]);
+
+  useEffect(() => {
+    const selectedBus = buses.find((bus) => bus.busId === selectedBusId);
+    if (selectedBus?.routeId) {
+      void fetchRouteById(selectedBus.routeId);
+    }
+  }, [buses, selectedBusId]);
 
   const applyFallbackRoute = () => {
     setRouteCoordinates(DEMO_PATH);
@@ -106,25 +114,75 @@ export function useMapScreenState() {
     }
   };
 
-  const fetchRoute = async () => {
-    try {
-      const response = await getRouteDirectionsFn({
-        origin: 'Parque Cervantes, David, Chiriquí, Panamá',
-        destination: 'Romero Doleguita, David, Chiriquí, Panamá',
-      });
+  const applyRouteData = (route: Awaited<ReturnType<typeof getRouteDetail>>) => {
+    if (!route) {
+      applyFallbackRoute();
+      return;
+    }
 
-      const data = response.data as RouteDirectionsResponse;
-      if (data?.ok && data.route?.polyline) {
-        const decodedCoords = decodePolyline(data.route.polyline);
-        setRouteCoordinates(decodedCoords);
-        setRouteOrigin(data.route.origin);
-        setRouteDestination(data.route.destination);
+    const coordinates = route.geometryPolyline
+      ? decodePolyline(route.geometryPolyline)
+      : route.anchorPoints?.map((point) => point.coordinates) ?? route.stops.map((stop) => stop.coordinates);
+
+    setRouteCoordinates(coordinates);
+
+    const originPoint = route.anchorPoints?.find((point) => point.kind === 'start');
+    const destinationPoint = route.anchorPoints?.find((point) => point.kind === 'end');
+
+    setRouteOrigin(
+      originPoint
+        ? {
+            latitude: originPoint.coordinates.latitude,
+            longitude: originPoint.coordinates.longitude,
+            address: originPoint.label,
+          }
+        : route.stops[0]
+          ? {
+              latitude: route.stops[0].coordinates.latitude,
+              longitude: route.stops[0].coordinates.longitude,
+              address: route.stops[0].name,
+            }
+          : null
+    );
+    setRouteDestination(
+      destinationPoint
+        ? {
+            latitude: destinationPoint.coordinates.latitude,
+            longitude: destinationPoint.coordinates.longitude,
+            address: destinationPoint.label,
+          }
+        : route.stops[route.stops.length - 1]
+          ? {
+              latitude: route.stops[route.stops.length - 1].coordinates.latitude,
+              longitude: route.stops[route.stops.length - 1].coordinates.longitude,
+              address: route.stops[route.stops.length - 1].name,
+            }
+          : null
+    );
+  };
+
+  const fetchRouteById = async (routeId: string) => {
+    try {
+      const route = await getRouteDetail(routeId);
+      applyRouteData(route);
+    } catch (error) {
+      console.warn('[Map] Error obteniendo ruta desde backend. Usando fallback local.', error);
+      applyFallbackRoute();
+    }
+  };
+
+  const fetchInitialRoute = async () => {
+    try {
+      const routes = await getRoutes();
+      const firstRoute = routes[0];
+      if (!firstRoute?.id) {
+        applyFallbackRoute();
         return;
       }
 
-      applyFallbackRoute();
+      await fetchRouteById(firstRoute.id);
     } catch (error) {
-      console.warn('[Map] Error obteniendo ruta desde backend. Usando fallback local.', error);
+      console.warn('[Map] Error cargando rutas iniciales. Usando fallback local.', error);
       applyFallbackRoute();
     }
   };
